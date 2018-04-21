@@ -1,2 +1,2 @@
-# dx-token-contract
-The DX token smart contract that logs all the appriorate voting information and is the basis of all transactions.
+# Ðivision X Token Contract
+## Records voting informatics for negative, postive, and total particpation count. 
