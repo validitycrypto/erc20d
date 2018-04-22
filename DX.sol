@@ -83,7 +83,7 @@ contract Token is ERC20, BasicToken {
   }
 
 
-  function delegationEvent(address voter, uint256 voting_weight, uint256 choice, string project) public dx {
+  function delegationEvent(address voter, uint256 voting_weight, uint256 choice, string project) public {
 
         uint a; 
         uint b;
