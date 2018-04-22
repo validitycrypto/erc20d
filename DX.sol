@@ -68,7 +68,12 @@ contract Token is ERC20, BasicToken {
 
         Delegate storage x = votelog[msg.sender];
         require(x.delegation_count == 0);
-        Delegate memory divx = Delegate({user_name: user, subject_name: z.subject_name, delegation_count: 0, vote_count: 0, posvote_count: 0, negvote_count: 0});
+        Delegate memory divx = Delegate({user_name: user,
+                                         subject_name: z.subject_name,
+                                         delegation_count: 0,
+                                         vote_count: 0,
+                                         posvote_count: 0,
+                                         negvote_count: 0});
         votelog[msg.sender] = divx; 
 
   }
@@ -96,7 +101,11 @@ contract Token is ERC20, BasicToken {
         x.subject_name.push(project);
         if(option == x.posvote_count){a = option; b = x.posvote_count;}
         else if(option == x.posvote_count){a = x.posvote_count; b = option;}
-        Delegate memory division = Delegate({user_name: x.user_name, subject_name: x.subject_name, delegation_count: x.delegation_count, vote_count: x.vote_count, posvote_count: a, negvote_count: b});
+        Delegate memory division = Delegate({user_name: x.user_name,
+                                             subject_name: x.subject_name,
+                                             delegation_count: x.delegation_count,
+                                             vote_count: x.vote_count, posvote_count: a,
+                                             negvote_count: b});
         votelog[voter] = division;
 
   }
