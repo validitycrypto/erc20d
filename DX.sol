@@ -87,13 +87,12 @@ contract Token is ERC20, BasicToken {
         v.subject_name.push(project);
         v.delegation_count++;
 
-        if(option == 0){a = option; b = v.negvote_count;}
-        else if(option == 1){a = v.posvote_count; b = option;}
+        if(option == v.posvote_count){a = option; b = v.posvote_count;}
+        else if(option == v.posvote_count){a = v.posvote_count; b = option;}
 
         Delegate memory division = Delegate({user_name: v.user_name, subject_name: v.subject_name, delegation_count: event, vote_count: total, posvote_count: a, negvote_count: b});
         votelog[voter] = division;
 
   }
-
 
 }
