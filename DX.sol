@@ -78,7 +78,7 @@ contract Token is ERC20, BasicToken {
 
         Delegate storage x = votelog[target];
         require(x.username != 0);
-        return (x.user_name, x.subject_name, x.delegation_count, x.vote_count, x.posvote_count, x.negvote_count)
+        return (x.user_name, x.subject_name, x.delegation_count, x.vote_count, x.posvote_count, x.negvote_count);
 
   }
 
