@@ -78,26 +78,22 @@ contract Token is ERC20, BasicToken {
 
         Delegate storage v = votelog[voter];
         address[] previous = v.subject_name;
-        string user = v.user_name;
-        uint event = v.delegation_count;
-        uint total = v.vote_count;
-        uint pos = v.posvote_count;
-        uint neg = v.negvote_count;
-        uint option = choice == 0 ? neg : pos;
+        uint option = choice == 0 ? v.posvote_count : v.negvote_count;
         uint a; 
         uint b;
 
         voting_weight += option;
-        voting_weight += total;
-        previous.push(project);
-        event++;
+        voting_weight += v.vote_count;
+        v.subject_name.push(project);
+        v.delegation_count++;
 
-        if(option == 0){a = option; b = neg;}
-        else if(option == 1){a = pos; b = option;}
+        if(option == 0){a = option; b = v.negvote_count;}
+        else if(option == 1){a = v.posvote_count; b = option;}
 
-        Delegate memory division = Delegate({user_name: user, subject_name: previous, delegation_count: event, vote_count: total, posvote_count: a, negvote_count: b});
+        Delegate memory division = Delegate({user_name: v.user_name, subject_name: v.subject_name, delegation_count: event, vote_count: total, posvote_count: a, negvote_count: b});
         votelog[voter] = division;
 
   }
+
 
 }
