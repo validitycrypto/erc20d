@@ -60,7 +60,6 @@ contract Token is ERC20, BasicToken {
     
   }
 
-
   function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool)
   {
   
@@ -74,7 +73,6 @@ contract Token is ERC20, BasicToken {
         return true;
     
   }
-
 
   function registerVoter(string user) public
   {
@@ -91,7 +89,6 @@ contract Token is ERC20, BasicToken {
 
   }
 
-
   function viewStats(address target) public constant returns(string,string[],uint256,uint256,uint256,uint256)
   {
 
@@ -100,7 +97,6 @@ contract Token is ERC20, BasicToken {
         return (x.user_name, x.subject_name, x.delegation_count, x.vote_count, x.posvote_count, x.negvote_count);
 
   }
-
 
   function delegationEvent(address voter, uint256 voting_weight, uint256 choice, string project) public
   {
@@ -124,7 +120,5 @@ contract Token is ERC20, BasicToken {
         votelog[voter] = division;
 
   }
-
-
 
 }
