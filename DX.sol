@@ -9,7 +9,7 @@ contract DX is ERC20, BasicToken {
     {
 
         string user_name;
-        string[] subject_name;
+        bytes32[] subject_name;
         uint256 delegation_count;
         uint256 negvote_count;
         uint256 posvote_count;
@@ -94,15 +94,15 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    function viewStats(address target) public constant returns(string, string[], uint256, uint256, uint256, uint256)
+    function viewStats(address target) public constant returns (string, bytes32[], uint256, uint256)
     {
 
         Delegate storage x = votelog[target];
-        return (x.user_name, x.subject_name, x.delegation_count, x.vote_count, x.posvote_count, x.negvote_count);
+        return (x.user_name, x.subject_name, x.delegation_count, x.vote_count);
 
     }
 
-    function delegationEvent(address voter, uint256 weight, byte choice, string project) public
+    function delegationEvent(address voter, uint256 weight, byte choice, bytes32 project) public
     {
 
         uint a;
