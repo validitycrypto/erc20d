@@ -66,32 +66,41 @@ contract Token is ERC20, BasicToken {
 
   function registerVoter(string user) public {
 
-        Delegate storage z = votelog[msg.sender];
-        require(z.delegation_count == 0);
+        Delegate storage x = votelog[msg.sender];
+        require(x.delegation_count == 0);
         Delegate memory divx = Delegate({user_name: user, subject_name: z.subject_name, delegation_count: 0, vote_count: 0, posvote_count: 0, negvote_count: 0});
         votelog[msg.sender] = divx; 
 
   }
 
 
+  function viewStats(address target) public constant returns(string,string[],uint256,uint256,uint256,uint256) {
+
+        Delegate storage x = votelog[target];
+        require(x.username != 0);
+        return (x.user_name, x.subject_name, x.delegation_count, x.vote_count, x.posvote_count, x.negvote_count)
+
+  }
+
+
   function delegationEvent(address voter, uint256 voting_weight, uint256 choice, string project) public dx {
-  
-        Delegate storage v = votelog[voter];
-        uint option = choice == 0 ? v.posvote_count : v.negvote_count;
+
         uint a; 
         uint b;
-        
+        Delegate storage x = votelog[voter];
+        address[] previous = x.subject_name;
+        uint option = choice == 0 ? x.posvote_count : x.negvote_count;
+        x.delegation_count++;
         voting_weight += option;
-        voting_weight += v.vote_count;
-        v.subject_name.push(project);
-        v.delegation_count++;
-
-        if(option == v.posvote_count){a = option; b = v.posvote_count;}
-        else if(option == v.posvote_count){a = v.posvote_count; b = option;}
-
-        Delegate memory division = Delegate({user_name: v.user_name, subject_name: v.subject_name, delegation_count: event, vote_count: total, posvote_count: a, negvote_count: b});
+        voting_weight += x.vote_count;
+        x.subject_name.push(project);
+        if(option == x.posvote_count){a = option; b = x.posvote_count;}
+        else if(option == x.posvote_count){a = x.posvote_count; b = option;}
+        Delegate memory division = Delegate({user_name: x.user_name, subject_name: x.subject_name, delegation_count: x.delegation_count, vote_count: x.vote_count, posvote_count: a, negvote_count: b});
         votelog[voter] = division;
 
   }
+
+
 
 }
