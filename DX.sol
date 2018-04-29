@@ -24,6 +24,23 @@ contract DX is ERC20, BasicToken {
     byte constant NEG = 0x02;
     string constant NA = "NA";
 
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+    uint256 public totalSupply;
+
+    function DX() public
+    {
+
+      symbol = 'DX';
+      name = 'Ðivision X';
+      decimals = 18;
+      totalSupply = 50600000000 * 10**uint(decimals);
+      balances[msg.sender] = totalSupply;
+      Transfer(address(0), msg.sender, totalSupply);
+
+    }
+
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool)
     {
 
