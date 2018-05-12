@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.19;
 
 import "./BasicToken.sol";
 import "./ERC20.sol";
@@ -8,7 +8,7 @@ contract DX is ERC20, BasicToken {
     struct Delegate
     {
 
-        string user_name;
+        bytes32 user_name;
         bytes32[] subject_name;
         uint256 delegation_count;
         uint256 negvote_count;
@@ -19,25 +19,34 @@ contract DX is ERC20, BasicToken {
 
     mapping (address => mapping (address => uint256)) internal allowed;
     mapping(address => Delegate) public votelog;
+    address public founder = msg.sender;
+    address public admin;
     uint256 constant VOTE = 10000;
-    byte constant POS = 0x01;
-    byte constant NEG = 0x02;
-    string constant NA = "NA";
+    bytes1 constant POS = 0x01;
+    bytes1 constant NEG = 0x02;
 
     string public name;
     string public symbol;
     uint8 public decimals;
     uint256 public totalSupply;
 
-    function DX() public
+    modifier only_admin()
     {
 
-      symbol = 'DX';
-      name = 'Ðivision X';
-      decimals = 18;
-      totalSupply = 50600000000 * 10**uint(decimals);
-      balances[msg.sender] = totalSupply;
-      Transfer(address(0), msg.sender, totalSupply);
+        if(msg.sender != admin || msg.sender != founder){revert();}
+        _;
+
+    }
+
+    function DX() public 
+    {
+
+        symbol = "DX";
+        name = "Ðivision X";
+        decimals = 18;
+        totalSupply = 50600000000 * 10**uint(decimals);
+        balances[founder] = totalSupply;
+        Transfer(this, founder, totalSupply);
 
     }
 
@@ -86,16 +95,16 @@ contract DX is ERC20, BasicToken {
 
         uint oldValue = allowed[msg.sender][_spender];
         if (_subtractedValue > oldValue) {
-          allowed[msg.sender][_spender] = 0;
+            allowed[msg.sender][_spender] = 0;
         } else {
-          allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
+            allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
         }
         Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
 
     }
 
-    function registerVoter(string user) public
+    function registerVoter(bytes32 user) public
     {
 
         Delegate storage x = votelog[msg.sender];
@@ -111,7 +120,7 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    function viewStats(address target) public constant returns (string, bytes32[], uint256, uint256)
+    function viewStats(address target) public constant returns (bytes32, bytes32[], uint256, uint256)
     {
 
         Delegate storage x = votelog[target];
@@ -119,13 +128,20 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    function delegationEvent(address voter, uint256 weight, byte choice, bytes32 project) public
+    function adminControl (address entity) public only_admin
+    {
+
+        admin = entity;
+
+    }
+
+    function delegationEvent(address voter, uint256 weight, bytes1 choice, bytes32 project) public only_admin
     {
 
         uint a;
         uint b;
         Delegate storage x = votelog[voter];
-        uint option = choice == POS ? x.posvote_count : x.negvote_count;
+        uint256 option = choice == POS ? x.posvote_count : x.negvote_count;
         x.delegation_count++;
         option = option + weight;
         x.vote_count = x.vote_count + weight;
