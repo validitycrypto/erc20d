@@ -135,11 +135,11 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    function viewStats(address target) public constant returns (bytes32, bytes32[25], uint256, uint256)
+    function viewStats(address target) public constant returns (bytes32, bytes32[25], uint256, uint256, uint256, uint256)
     {
 
         Delegate storage x = votelog[target];
-        return (x.user_name, x.subject_name, x.delegation_count, x.vote_count);
+        return (x.user_name, x.subject_name, x.posvote_count, x.negvote_count, x.delegation_count, x.vote_count);
 
     }
 
@@ -148,6 +148,16 @@ contract DX is ERC20, BasicToken {
 
         admin = entity;
         return admin;
+
+    }
+
+    function delegationCreate(bytes32 project) public only_admin
+    {
+
+        Analysed storage y = electionlog[project];
+        require(y.completed != true);
+        Analysed memory x = Analysed{(completed: false)};
+        electionlog[project] = x;
 
     }
 
@@ -160,6 +170,8 @@ contract DX is ERC20, BasicToken {
         bool outcome;
         bytes32[25] memory previous;
         Delegate storage x = votelog[voter];
+        Analysed storage y = electionlog[project];
+        require(y.completed == false);
 
 	      for(uint v = 0; v < x.subject_name.length ; v++)
 	      {
