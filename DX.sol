@@ -158,12 +158,8 @@ contract DX is ERC20, BasicToken {
         uint b;
         uint c = 0;
         bool outcome;
-        Delegate storage x = votelog[voter];
-        uint256 option = choice == POS ? x.posvote_count : x.negvote_count;
-        x.delegation_count++;
-        option = option + weight;
-        x.vote_count = x.vote_count + weight;
         bytes32[25] memory previous;
+        Delegate storage x = votelog[voter];
 
 	      for(uint v = 0; v < x.subject_name.length ; v++)
 	      {
@@ -171,16 +167,24 @@ contract DX is ERC20, BasicToken {
               previous[v] = x.subject_name[v];
               if(project == x.subject_name[v]){revert();}
 		          else if(previous[v] == 0){previous[v] = project;
-                                                      c++;
-                                                      if(v == subject_name.length){c++;} break;}
+                                        c++;
+                                        if(v == x.subject_name.length){c++;} break;}
 
 	      }
 
         require(c > 0);
-        if(option == x.posvote_count){a = option; b = x.posvote_count;}
-        else if(option == x.posvote_count){a = x.posvote_count; b = option;}
+        uint256 option = choice == POS ? x.posvote_count : x.negvote_count;
+
         if(c == 1){outcome = false;}
         else if(c == 2){outcome = true;}
+
+        x.delegation_count++;
+        option = option + weight;
+        x.vote_count = x.vote_count + weight;
+
+        if(option == x.posvote_count){a = option; b = x.posvote_count;}
+        else if(option == x.posvote_count){a = x.posvote_count; b = option;}
+
         Delegate memory division = Delegate({
             user_name: x.user_name,
             subject_name: previous,
