@@ -147,25 +147,29 @@ contract DX is ERC20, BasicToken {
 
         uint a;
         uint b;
+        uint c = 0;
         Delegate storage x = votelog[voter];
         uint256 option = choice == POS ? x.posvote_count : x.negvote_count;
         x.delegation_count++;
         option = option + weight;
         x.vote_count = x.vote_count + weight;
+        bytes32[25] memory previous;
 
-	      for(uint v = 0; 0 < x.subject_name.length ; v++)
+	      for(uint v = 0; v < x.subject_name.length ; v++)
 	      {
 
-		          if(project != x.subject_name[v] && v != x.subject_name.length){x.subject_name[v] = project;}
-		          else if(project == x.subject_name[v] || v == 25){revert();}
+              previous[v] = x.subject_name[v];
+              if(project == x.subject_name[v]){revert();}
+		          else if(previous[v] == 0){previous[v] = project; c++; break;}
 
 	      }
 
+        require(c == 1);
         if(option == x.posvote_count){a = option; b = x.posvote_count;}
         else if(option == x.posvote_count){a = x.posvote_count; b = option;}
         Delegate memory division = Delegate({
             user_name: x.user_name,
-            subject_name: x.subject_name,
+            subject_name: previous,
             delegation_count: x.delegation_count,
             vote_count: x.vote_count,
             posvote_count: a,
