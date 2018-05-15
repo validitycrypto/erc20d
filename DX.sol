@@ -9,7 +9,7 @@ contract DX is ERC20, BasicToken {
     {
 
         bytes32 user_name;
-        bytes32[] subject_name;
+        bytes32[25] subject_name;
         uint256 delegation_count;
         uint256 negvote_count;
         uint256 posvote_count;
@@ -21,24 +21,30 @@ contract DX is ERC20, BasicToken {
     mapping(address => Delegate) public votelog;
     address public founder = msg.sender;
     address public admin;
-    uint256 constant VOTE = 10000;
     bytes1 constant POS = 0x01;
     bytes1 constant NEG = 0x02;
-
     string public name;
     string public symbol;
     uint8 public decimals;
     uint256 public totalSupply;
 
-    modifier only_admin()
+    modifier only_founder()
     {
 
-        if(msg.sender != admin || msg.sender != founder){revert();}
+        if(msg.sender != founder){revert();}
         _;
 
     }
 
-    function DX() public 
+    modifier only_admin()
+    {
+
+        if(msg.sender != admin){revert();}
+        _;
+
+    }
+
+    function DX() public
     {
 
         symbol = "DX";
@@ -120,7 +126,7 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    function viewStats(address target) public constant returns (bytes32, bytes32[], uint256, uint256)
+    function viewStats(address target) public constant returns (bytes32, bytes32[25], uint256, uint256)
     {
 
         Delegate storage x = votelog[target];
@@ -128,10 +134,11 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    function adminControl (address entity) public only_admin
+    function adminControl(address entity) public only_founder returns (address)
     {
 
         admin = entity;
+        return admin;
 
     }
 
@@ -145,7 +152,15 @@ contract DX is ERC20, BasicToken {
         x.delegation_count++;
         option = option + weight;
         x.vote_count = x.vote_count + weight;
-        x.subject_name.push(project);
+
+	      for(uint v = 0; 0 < x.subject_name.length ; v++)
+	      {
+
+		          if(project != x.subject_name[v] && v != x.subject_name.length){x.subject_name[v] = project;}
+		          else if(project == x.subject_name[v] || v == 25){revert();}
+
+	      }
+
         if(option == x.posvote_count){a = option; b = x.posvote_count;}
         else if(option == x.posvote_count){a = x.posvote_count; b = option;}
         Delegate memory division = Delegate({
