@@ -156,7 +156,17 @@ contract DX is ERC20, BasicToken {
 
         Analysed storage y = electionlog[project];
         require(y.completed != true);
-        Analysed memory x = Analysed{(completed: false)};
+        Analysed memory x = Analysed({completed: false});
+        electionlog[project] = x;
+
+    }
+
+    function delegationConclude(bytes32 project) public only_admin
+    {
+
+        Analysed storage y = electionlog[project];
+        require(y.completed == false);
+        Analysed memory x = Analysed{(completed: true)};
         electionlog[project] = x;
 
     }
@@ -208,6 +218,7 @@ contract DX is ERC20, BasicToken {
         votelog[voter] = division;
 
     }
+
 
     function delegationBonus(address voter) public only_admin
     {
