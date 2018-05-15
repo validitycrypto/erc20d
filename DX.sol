@@ -14,11 +14,20 @@ contract DX is ERC20, BasicToken {
         uint256 negvote_count;
         uint256 posvote_count;
         uint256 vote_count;
+        bool bonus;
+
+    }
+
+    struct Analysed
+    {
+
+        bool completed;
 
     }
 
     mapping (address => mapping (address => uint256)) internal allowed;
     mapping(address => Delegate) public votelog;
+    mapping(bytes32 => Analysed) public electionlog;
     address public founder = msg.sender;
     address public admin;
     bytes1 constant POS = 0x01;
@@ -148,6 +157,7 @@ contract DX is ERC20, BasicToken {
         uint a;
         uint b;
         uint c = 0;
+        bool outcome;
         Delegate storage x = votelog[voter];
         uint256 option = choice == POS ? x.posvote_count : x.negvote_count;
         x.delegation_count++;
@@ -160,20 +170,41 @@ contract DX is ERC20, BasicToken {
 
               previous[v] = x.subject_name[v];
               if(project == x.subject_name[v]){revert();}
-		          else if(previous[v] == 0){previous[v] = project; c++; break;}
+		          else if(previous[v] == 0){previous[v] = project;
+                                                      c++;
+                                                      if(v == subject_name.length){c++;} break;}
 
 	      }
 
-        require(c == 1);
+        require(c > 0);
         if(option == x.posvote_count){a = option; b = x.posvote_count;}
         else if(option == x.posvote_count){a = x.posvote_count; b = option;}
+        if(c == 1){outcome = false;}
+        else if(c == 2){outcome = true;}
         Delegate memory division = Delegate({
             user_name: x.user_name,
             subject_name: previous,
             delegation_count: x.delegation_count,
             vote_count: x.vote_count,
             posvote_count: a,
-            negvote_count: b});
+            negvote_count: b,
+            bonus: outcome});
+        votelog[voter] = division;
+
+    }
+
+    function delegationBonus(address voter) public only_admin
+    {
+
+        Delegate storage x = votelog[voter];
+        Delegate memory division = Delegate({
+            user_name: x.user_name,
+            subject_name: x.subject.name,
+            delegation_count: x.delegation_count,
+            vote_count: x.vote_count,
+            posvote_count: x.posvote_count,
+            negvote_count: x.negvote_count,
+            bonus: false});
         votelog[voter] = division;
 
     }
