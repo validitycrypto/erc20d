@@ -25,17 +25,20 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    mapping (address => mapping (address => uint256)) internal allowed;
+    mapping(address => mapping (address => uint256)) internal allowed;
     mapping(address => Delegate) public votelog;
     mapping(bytes32 => Analysed) public electionlog;
     address public founder = msg.sender;
     address public admin;
-    bytes1 constant POS = 0x01;
-    bytes1 constant NEG = 0x02;
+    bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
+    bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
     string public name;
     string public symbol;
     uint8 public decimals;
     uint256 public totalSupply;
+    uint public a;
+    uint public b;
+    uint public c;
 
     modifier only_founder()
     {
@@ -64,6 +67,7 @@ contract DX is ERC20, BasicToken {
         Transfer(this, founder, totalSupply);
 
     }
+
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool)
     {
@@ -130,7 +134,8 @@ contract DX is ERC20, BasicToken {
             delegation_count: 0,
             vote_count: 0,
             posvote_count: 0,
-            negvote_count: 0});
+            negvote_count: 0,
+            bonus: false});
         votelog[msg.sender] = divx;
 
     }
@@ -154,8 +159,6 @@ contract DX is ERC20, BasicToken {
     function delegationCreate(bytes32 project) public only_admin
     {
 
-        Analysed storage y = electionlog[project];
-        require(y.completed != true);
         Analysed memory x = Analysed({completed: false});
         electionlog[project] = x;
 
@@ -166,17 +169,15 @@ contract DX is ERC20, BasicToken {
 
         Analysed storage y = electionlog[project];
         require(y.completed == false);
-        Analysed memory x = Analysed{(completed: true)};
+        Analysed memory x = Analysed({completed: true});
         electionlog[project] = x;
 
     }
 
-    function delegationEvent(address voter, uint256 weight, bytes1 choice, bytes32 project) public only_admin
+    function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public only_admin
     {
 
-        uint a;
-        uint b;
-        uint c = 0;
+        c = 0;
         bool outcome;
         bytes32[25] memory previous;
         Delegate storage x = votelog[voter];
@@ -186,26 +187,27 @@ contract DX is ERC20, BasicToken {
 	      for(uint v = 0; v < x.subject_name.length ; v++)
 	      {
 
+              bytes32 na;
               previous[v] = x.subject_name[v];
               if(project == x.subject_name[v]){revert();}
-		          else if(previous[v] == 0){previous[v] = project;
-                                        c++;
-                                        if(v == x.subject_name.length){c++;} break;}
+		          else if(previous[v] == na){previous[v] = project;
+                                         c++;
+                                         if(v == x.subject_name.length){c++;} break;}
 
 	      }
 
         require(c > 0);
-        uint256 option = choice == POS ? x.posvote_count : x.negvote_count;
 
         if(c == 1){outcome = false;}
         else if(c == 2){outcome = true;}
 
+        uint256 option = choice == POS ? x.posvote_count : x.negvote_count;
         x.delegation_count++;
         option = option + weight;
         x.vote_count = x.vote_count + weight;
 
-        if(option == x.posvote_count){a = option; b = x.posvote_count;}
-        else if(option == x.posvote_count){a = x.posvote_count; b = option;}
+        if(choice == POS){a = option; b = x.negvote_count;}
+        else if(choice == NEG){a = x.posvote_count; b = option;}
 
         Delegate memory division = Delegate({
             user_name: x.user_name,
@@ -226,7 +228,7 @@ contract DX is ERC20, BasicToken {
         Delegate storage x = votelog[voter];
         Delegate memory division = Delegate({
             user_name: x.user_name,
-            subject_name: x.subject.name,
+            subject_name: x.subject_name,
             delegation_count: x.delegation_count,
             vote_count: x.vote_count,
             posvote_count: x.posvote_count,
