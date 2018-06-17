@@ -23,19 +23,11 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    struct Analysed
-    {
-
-        bool completed;
-
-    }
+    modifier only_founder() { if(msg.sender != founder){revert();}  _; }
+    modifier only_admin(){ if(msg.sender != admin){revert();}   _; }
 
     mapping(address => mapping (address => uint256)) internal allowed;
     mapping(address => Delegate) public vlog;
-    mapping(bytes32 => Analysed) public elog;
-
-    modifier only_founder() { if(msg.sender != founder){revert();}  _; }
-    modifier only_admin(){ if(msg.sender != admin){revert();}   _; }
 
     string public name;
     string public symbol;
@@ -57,7 +49,7 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    function transferFrom( address _from,
+    function transferFrom(  address _from,
                             address _to,
                             uint256 _value ) public returns (bool)
     {
@@ -149,24 +141,6 @@ contract DX is ERC20, BasicToken {
 
         admin = entity;
         return admin;
-
-    }
-
-    function delegationStart(bytes32 project) public only_admin
-    {
-
-        Analysed memory x = Analysed({completed: false});
-        elog[project] = x;
-
-    }
-
-    function delegationConclude(bytes32 project) public only_admin
-    {
-
-        Analysed storage y = elog[project];
-        require(y.completed == false);
-        Analysed memory x = Analysed({completed: true});
-        elog[project] = x;
 
     }
 
