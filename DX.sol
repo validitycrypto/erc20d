@@ -23,8 +23,8 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    modifier only_founder() { if(msg.sender != founder){revert();}  _; }
-    modifier only_admin(){ if(msg.sender != admin){revert();}   _; }
+    modifier only_founder(){ if(msg.sender != founder){revert();} _; }
+    modifier only_admin(){ if(msg.sender != admin){revert();} _; }
 
     mapping(address => mapping (address => uint256)) internal allowed;
     mapping(address => Delegate) public vlog;
@@ -154,8 +154,6 @@ contract DX is ERC20, BasicToken {
         bool outcome;
         bytes32[25] memory previous;
         Delegate storage x = vlog[voter];
-        Analysed storage y = elog[project];
-        require(y.completed == false);
 
 	      for(uint v = 0; v < x.subj.length ; v++)
 	      {
