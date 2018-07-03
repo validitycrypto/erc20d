@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.20;
 
 import "./BasicToken.sol";
 import "./ERC20.sol";
@@ -7,27 +7,16 @@ contract DX is ERC20, BasicToken {
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
+    bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
     address public founder = msg.sender;
     address public admin;
-
-    struct Delegate
-    {
-
-        bytes32 usr;
-        bytes32[25] subj;
-        uint256 e_count;
-        uint256 n_count;
-        uint256 p_count;
-        uint256 v_count;
-        bool bonus;
-
-    }
 
     modifier only_founder(){ if(msg.sender != founder){revert();} _; }
     modifier only_admin(){ if(msg.sender != admin){revert();} _; }
 
     mapping(address => mapping (address => uint256)) internal allowed;
-    mapping(address => Delegate) public vlog;
+    mapping(address => bytes32[25]) public previous;
+    mapping(address => bytes32[6]) public delegate;
 
     string public name;
     string public symbol;
@@ -109,30 +98,27 @@ contract DX is ERC20, BasicToken {
 
     }
 
-    function registerVoter(bytes32 usr) public
+    function registerVoter(bytes32 user) public
     {
 
-        Delegate storage x = vlog[msg.sender];
-        require(x.e_count == 0);
-        delegationStorage( msg.sender,
-                           usr,x.subj,
-                           x.e_count,
-                           x.v_count,
-                           x.p_count,
-                           x.n_count,
-                           x.bonus );
+        bytes32[6] storage x = delegate[msg.sender];
+        require(x[0] == NA);
+        x[0] = user;
 
     }
 
     function viewStats(address target) public constant returns (bytes32, bytes32[25], uint256, uint256, uint256, uint256)
     {
 
-        Delegate storage x = vlog[target];
-        return ( x.usr, x.subj,
-                 x.p_count,
-                 x.n_count,
-                 x.e_count,
-                 x.v_count );
+        bytes32[6] storage x = delegate[target];
+        bytes32[25] storage y = previous[target];
+
+        return ( x[0],
+                 y,
+                 uint256(x[1]),
+                 uint256(x[2]),
+                 uint256(x[3]),
+                 uint256(x[4]) );
 
     }
 
@@ -151,81 +137,40 @@ contract DX is ERC20, BasicToken {
     {
 
         c = 0;
-        bool outcome;
-        bytes32[25] memory previous;
-        Delegate storage x = vlog[voter];
+        bytes32[25] memory prv;
+        bytes32[6] storage x = delegate[voter];
+        bytes32[25] storage y = previous[voter];
 
-	      for(uint v = 0; v < x.subj.length ; v++)
+	      for(uint v = 0; v < y.length ; v++)
 	      {
 
-              bytes32 na;
-              previous[v] = x.subj[v];
-              if(project == x.subj[v]){revert();}
-		          else if(previous[v] == na){previous[v] = project;
-                                         c++;
-                                         if(v == x.subj.length){c++;} break;}
+              prv[v] = y[v];
+              if(project == y[v]){revert();}
+		          else if(prv[v] == NA){prv[v] = project;
+                                    c++;
+                                    if(v == y.length){c++;} break;}
 
 	      }
 
         require(c > 0);
+        previous[voter] = prv;
+        x[1] = bytes32(uint256(x[1]) + 1);
 
-        if(c == 1){outcome = false;}
-        else if(c == 2){outcome = true;}
+        if(choice == POS){ x[3] = bytes32(uint256(x[3]) + weight); }
+        else if(choice == NEG){ x[2] = bytes32(uint256(x[2]) + weight); }
 
-        uint256 option = choice == POS ? x.p_count : x.n_count;
-        x.e_count++;
-        option = option + weight;
-        x.v_count = x.v_count + weight;
+        x[4] = bytes32(uint256(x[4]) + weight);
 
-        if(choice == POS){a = option; b = x.n_count;}
-        else if(choice == NEG){a = x.p_count; b = option;}
-
-        delegationStorage( voter,
-                           x.usr,
-                           previous,
-                           x.e_count,
-                           x.v_count,
-                           x.p_count,
-                           x.n_count,
-                           x.bonus );
+        if(c == 1){ x[5] = bytes32("false"); }
+        else if(c == 2){ x[5] = bytes32("true"); }
 
     }
 
     function delegationBonus(address voter) public only_admin
     {
 
-        Delegate storage x = vlog[voter];
-        bool restart = false;
-        delegationStorage( voter,
-                           x.usr,
-                           x.subj,
-                           x.e_count,
-                           x.v_count,
-                           x.p_count,
-                           x.n_count,
-                           restart );
-
-    }
-
-    function delegationStorage( address x,
-                                bytes32 y,
-                                bytes32[25] z,
-                                uint256 v,
-                                uint256 n,
-                                uint256 g,
-                                uint256 r,
-                                bool w ) internal
-    {
-
-        Delegate memory dvx = Delegate({
-            usr: y,
-            subj: z,
-            e_count: v,
-            v_count: n,
-            p_count: g,
-            n_count: r,
-            bonus: w});
-        vlog[x] = dvx;
+        bytes32[6] storage x = delegate[voter];
+        x[5] = bytes32("false");
 
     }
 
