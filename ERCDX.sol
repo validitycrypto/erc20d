@@ -3,7 +3,7 @@ pragma solidity ^0.4.20;
 import "./BasicToken.sol";
 import "./ERC20.sol";
 
-contract DX is ERC20, BasicToken {
+contract ERCDX is ERC20, BasicToken {
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
