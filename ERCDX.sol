@@ -26,7 +26,7 @@ contract ERCDX is ERC20, BasicToken {
     uint public b;
     uint public c;
 
-    function DX() public
+    function ERCDX() public
     {
 
         symbol = "DX";
@@ -107,7 +107,7 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function viewStats(address target) public constant returns (bytes32, bytes32[25], uint256, uint256, uint256, uint256)
+    function viewStats(address target) public constant returns (bytes32, bytes32[25], uint256, uint256, uint256, uint256, bytes32)
     {
 
         bytes32[6] storage x = delegate[target];
@@ -118,7 +118,8 @@ contract ERCDX is ERC20, BasicToken {
                  uint256(x[1]),
                  uint256(x[2]),
                  uint256(x[3]),
-                 uint256(x[4]) );
+                 uint256(x[4]),
+                 x[5] );
 
     }
 
@@ -146,9 +147,9 @@ contract ERCDX is ERC20, BasicToken {
 
               prv[v] = y[v];
               if(project == y[v]){revert();}
-		          else if(prv[v] == NA){prv[v] = project;
-                                    c++;
-                                    if(v == y.length){c++;} break;}
+		          else if(prv[v] == NA){c++;
+                                    prv[v] = project;
+                                    if(v == y.length-1){c++;} break;}
 
 	      }
 
@@ -171,6 +172,7 @@ contract ERCDX is ERC20, BasicToken {
 
         bytes32[6] storage x = delegate[voter];
         x[5] = bytes32("false");
+        delete previous[voter];
 
     }
 
