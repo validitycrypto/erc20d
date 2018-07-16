@@ -22,9 +22,6 @@ contract ERCDX is ERC20, BasicToken {
     string public symbol;
     uint8 public decimals;
     uint256 public totalSupply;
-    uint public a;
-    uint public b;
-    uint public c;
 
     function ERCDX() public
     {
@@ -73,7 +70,7 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function increaseApproval( address _spender,
+    function increaseApproval(  address _spender,
                                 uint _addedValue ) public returns (bool)
     {
 
@@ -84,7 +81,7 @@ contract ERCDX is ERC20, BasicToken {
     }
 
     function decreaseApproval( address _spender,
-                              uint _subtractedValue ) public returns (bool)
+                               uint _subtractedValue ) public returns (bool)
     {
 
         uint oldValue = allowed[msg.sender][_spender];
@@ -98,7 +95,8 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function registerVoter(bytes32 user) public
+    function registerVoter(
+                            bytes32 user ) public
     {
 
         bytes32[6] storage x = delegate[msg.sender];
@@ -107,7 +105,14 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function viewStats(address target) public constant returns (bytes32, bytes32[25], uint256, uint256, uint256, uint256, bytes32)
+    function viewStats(
+                          address target ) public constant returns ( bytes32,
+                                                                     bytes32[25],
+                                                                     uint256,
+                                                                     uint256,
+                                                                     uint256,
+                                                                     uint256,
+                                                                     bytes32 )
     {
 
         bytes32[6] storage x = delegate[target];
@@ -123,7 +128,8 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function adminControl(address entity) public only_founder returns (address)
+    function adminControl(
+                            address entity ) public only_founder returns (address)
     {
 
         admin = entity;
@@ -137,7 +143,7 @@ contract ERCDX is ERC20, BasicToken {
                               bytes32 project ) public only_admin
     {
 
-        c = 0;
+        uint256 c = 0;
         bytes32[25] memory prv;
         bytes32[6] storage x = delegate[voter];
         bytes32[25] storage y = previous[voter];
@@ -167,7 +173,8 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function delegationBonus(address voter) public only_admin
+    function delegationBonus(
+                              address voter ) public only_admin
     {
 
         bytes32[6] storage x = delegate[voter];
