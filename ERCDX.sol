@@ -1,4 +1,4 @@
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.24;
 
 import "./BasicToken.sol";
 import "./ERC20.sol";
@@ -17,13 +17,13 @@ contract ERCDX is ERC20, BasicToken {
     mapping(address => mapping (address => uint256)) internal allowed;
     mapping(address => bytes32[25]) public previous;
     mapping(address => bytes32[6]) public delegate;
-
+    
     string public name;
     string public symbol;
     uint8 public decimals;
     uint256 public totalSupply;
 
-    function ERCDX() public
+    constructor() public 
     {
 
         symbol = "DX";
