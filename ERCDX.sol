@@ -3,8 +3,9 @@ pragma solidity ^0.4.24;
 import "./BasicToken.sol";
 import "./ERC20.sol";
 
-contract ERCDX is ERC20, BasicToken {
-
+contract ERCDX is ERC20, BasicToken 
+{
+    
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
     bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
@@ -17,19 +18,20 @@ contract ERCDX is ERC20, BasicToken {
     mapping(address => mapping (address => uint256)) internal allowed;
     mapping(address => bytes32[25]) public previous;
     mapping(address => bytes32[6]) public delegate;
-    
+
     string public name;
     string public symbol;
     uint8 public decimals;
     uint256 public totalSupply;
 
-    constructor() public 
+    constructor( 
+                    ) public 
     {
 
         symbol = "DX";
         name = "Ðivision X";
         decimals = 18;
-        totalSupply = 50600000000 * 10**uint(decimals);
+        totalSupply = uint(50600000000).mul(10**uint(decimals));
         balances[founder] = totalSupply;
         emit Transfer(this, founder, totalSupply);
 
@@ -37,7 +39,7 @@ contract ERCDX is ERC20, BasicToken {
 
     function transferFrom(  address _from,
                             address _to,
-                            uint256 _value ) public returns (bool)
+                            uint256 _value  ) public returns (bool)
     {
 
         require(_to != address(0));
@@ -52,8 +54,8 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function approve( address _spender,
-                      uint256 _value ) public returns (bool)
+    function approve(  address _spender,
+                       uint256 _value    ) public returns (bool)
     {
 
         allowed[msg.sender][_spender] = _value;
@@ -62,8 +64,8 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function allowance( address _owner,
-                        address _spender ) public view returns (uint256)
+    function allowance(  address _owner,
+                         address _spender  ) public view returns (uint256)
     {
 
         return allowed[_owner][_spender];
@@ -71,7 +73,7 @@ contract ERCDX is ERC20, BasicToken {
     }
 
     function increaseApproval(  address _spender,
-                                uint _addedValue ) public returns (bool)
+                                uint _addedValue  ) public returns (bool)
     {
 
         allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
@@ -80,8 +82,8 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function decreaseApproval( address _spender,
-                               uint _subtractedValue ) public returns (bool)
+    function decreaseApproval(  address _spender,
+                                uint _subtractedValue  ) public returns (bool)
     {
 
         uint oldValue = allowed[msg.sender][_spender];
@@ -95,8 +97,8 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function registerVoter(
-                            bytes32 user ) public
+    function registerVoter( 
+                             bytes32 user  ) public
     {
 
         bytes32[6] storage x = delegate[msg.sender];
@@ -106,30 +108,30 @@ contract ERCDX is ERC20, BasicToken {
     }
 
     function viewStats(
-                          address target ) public constant returns ( bytes32,
-                                                                     bytes32[25],
-                                                                     uint256,
-                                                                     uint256,
-                                                                     uint256,
-                                                                     uint256,
-                                                                     bytes32 )
+                         address target  ) public constant returns (  bytes32,
+                                                                      bytes32[25],
+                                                                      uint256,
+                                                                      uint256,
+                                                                      uint256,
+                                                                      uint256,
+                                                                      bytes32  )
     {
 
         bytes32[6] storage x = delegate[target];
         bytes32[25] storage y = previous[target];
 
-        return ( x[0],
-                 y,
-                 uint256(x[1]),
-                 uint256(x[2]),
-                 uint256(x[3]),
-                 uint256(x[4]),
-                 x[5] );
+        return (  x[0],
+                  y,
+                  uint256(x[1]),
+                  uint256(x[2]),
+                  uint256(x[3]),
+                  uint256(x[4]),
+                  x[5]  );
 
     }
 
     function adminControl(
-                            address entity ) public only_founder returns (address)
+                            address entity  ) public only_founder returns (address)
     {
 
         admin = entity;
@@ -137,10 +139,10 @@ contract ERCDX is ERC20, BasicToken {
 
     }
 
-    function delegationEvent( address voter,
-                              uint256 weight,
-                              bytes32 choice,
-                              bytes32 project ) public only_admin
+    function delegationEvent(  address voter,
+                               uint256 weight,
+                               bytes32 choice,
+                               bytes32 project  ) public only_admin
     {
 
         uint256 c = 0;
@@ -148,25 +150,25 @@ contract ERCDX is ERC20, BasicToken {
         bytes32[6] storage x = delegate[voter];
         bytes32[25] storage y = previous[voter];
 
-	      for(uint v = 0; v < y.length ; v++)
-	      {
+	    for(uint v = 0; v < y.length ; v++)
+	    {
 
-              prv[v] = y[v];
-              if(project == y[v]){revert();}
-		          else if(prv[v] == NA){c++;
-                                    prv[v] = project;
-                                    if(v == y.length-1){c++;} break;}
+            prv[v] = y[v];
+            if(project == y[v]){revert();}
+		    else if(prv[v] == NA){c++;
+                                  prv[v] = project;
+                                  if(v == y.length-1){c++;} break;}
 
-	      }
+	    }
 
         require(c > 0);
         previous[voter] = prv;
-        x[1] = bytes32(uint256(x[1]) + 1);
+        x[1] = bytes32(uint256(x[1]).add(1));
 
-        if(choice == POS){ x[3] = bytes32(uint256(x[3]) + weight); }
-        else if(choice == NEG){ x[2] = bytes32(uint256(x[2]) + weight); }
+        if(choice == POS){ x[3] = bytes32(uint256(x[3]).add(weight)); }
+        else if(choice == NEG){ x[2] = bytes32(uint256(x[2]).add(weight)); }
 
-        x[4] = bytes32(uint256(x[4]) + weight);
+        x[4] = bytes32(uint256(x[4]).add(weight));
 
         if(c == 1){ x[5] = bytes32("false"); }
         else if(c == 2){ x[5] = bytes32("true"); }
@@ -174,7 +176,7 @@ contract ERCDX is ERC20, BasicToken {
     }
 
     function delegationBonus(
-                              address voter ) public only_admin
+                               address voter  ) public only_admin
     {
 
         bytes32[6] storage x = delegate[voter];
