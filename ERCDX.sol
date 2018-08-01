@@ -150,8 +150,8 @@ contract ERCDX is ERC20, BasicToken
         bytes32[6] storage x = delegate[voter];
         bytes32[25] storage y = previous[voter];
 
-	    for(uint v = 0; v < y.length ; v++)
-	    {
+	for(uint v = 0; v < y.length ; v++)
+	{
 
             prv[v] = y[v];
             if(project == y[v]){revert();}
@@ -159,7 +159,7 @@ contract ERCDX is ERC20, BasicToken
                                   prv[v] = project;
                                   if(v == y.length-1){c++;} break;}
 
-	    }
+	}
 
         require(c > 0);
         previous[voter] = prv;
