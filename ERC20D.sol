@@ -117,7 +117,7 @@ contract BasicToken is ERC20Basic
 
 }
 
-contract ERCDX is ERC20, BasicToken 
+contract ERC20D is ERC20, BasicToken 
 {
     
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
