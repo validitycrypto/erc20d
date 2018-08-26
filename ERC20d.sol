@@ -1,88 +1,88 @@
 pragma solidity ^0.4.24;
 
-library SafeMath 
+library SafeMath
 {
 
-  function mul(  uint256 _a, 
-                 uint256 _b  ) internal pure returns (uint256 c) 
+  function mul(  uint256 _a,
+                 uint256 _b  ) internal pure returns (uint256 c)
   {
-      
+
         if (_a == 0) {
             return 0;
             }
         c = _a * _b;
         assert(c / _a == _b);
         return c;
-        
+
   }
 
-  function div(  uint256 _a, 
-                 uint256 _b  ) internal pure returns (uint256) 
+  function div(  uint256 _a,
+                 uint256 _b  ) internal pure returns (uint256)
   {
         return _a / _b;
   }
 
-  function sub(  uint256 _a, 
-                 uint256 _b  ) internal pure returns (uint256) 
+  function sub(  uint256 _a,
+                 uint256 _b  ) internal pure returns (uint256)
   {
-      
+
         assert(_b <= _a);
         return _a - _b;
-        
+
   }
 
-  function add(  uint256 _a, 
-                 uint256 _b  ) internal pure returns (uint256 c) 
+  function add(  uint256 _a,
+                 uint256 _b  ) internal pure returns (uint256 c)
    {
-       
+
         c = _a + _b;
         assert(c >= _a);
         return c;
-    
+
   }
-  
+
 }
 
 
-contract ERC20Basic 
+contract ERC20Basic
 {
-    
-  function totalSupply( 
+
+  function totalSupply(
                            ) public view returns (uint256);
-                           
+
   function balanceOf(  address _who
                                      ) public view returns (uint256);
-                                     
+
   function transfer(  address _to,
                       uint256 _value  ) public returns (bool);
-                      
+
   event Transfer(  address indexed from,
-                   address indexed to, 
+                   address indexed to,
                    uint256 value  );
-  
+
 }
 
-contract ERC20 is ERC20Basic 
+contract ERC20 is ERC20Basic
 {
-    
-  function allowance(  address _owner, 
+
+  function allowance(  address _owner,
                        address _spender  ) public view returns (uint256);
 
-  function transferFrom(  address _from, 
-                          address _to, 
+  function transferFrom(  address _from,
+                          address _to,
                           uint256 _value  ) public returns (bool);
 
   function approve(  address _spender,
                      uint256 _value  ) public returns (bool);
-  
+
   event Approval(  address indexed owner,
                    address indexed spender,
                    uint256 value  );
 }
 
-contract BasicToken is ERC20Basic 
+contract BasicToken is ERC20Basic
 {
-    
+
   using SafeMath for uint256;
 
   mapping(address => uint256) internal balances;
@@ -90,15 +90,15 @@ contract BasicToken is ERC20Basic
   uint256 internal totalSupply_;
 
   function totalSupply(
-                           ) public view returns (uint256) 
+                           ) public view returns (uint256)
   {
         return totalSupply_;
   }
 
-  function transfer(  address _to, 
-                      uint256 _value  ) public returns (bool) 
+  function transfer(  address _to,
+                      uint256 _value  ) public returns (bool)
   {
-                          
+
         require(_value <= balances[msg.sender]);
         require(_to != address(0));
 
@@ -106,20 +106,20 @@ contract BasicToken is ERC20Basic
         balances[_to] = balances[_to].add(_value);
         emit Transfer(msg.sender, _to, _value);
         return true;
-    
+
   }
 
-  function balanceOf(  
-                       address _owner  ) public view returns (uint256) 
+  function balanceOf(
+                       address _owner  ) public view returns (uint256)
   {
         return balances[_owner];
   }
 
 }
 
-contract ERC20D is ERC20, BasicToken 
+contract ERC20d is ERC20, BasicToken
 {
-    
+
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
     bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
@@ -138,12 +138,12 @@ contract ERC20D is ERC20, BasicToken
     uint8 public decimals;
     uint256 public totalSupply;
 
-    constructor( 
-                    ) public 
+    constructor(
+                    ) public
     {
 
-        symbol = "DX";
-        name = "Ðivision X";
+        symbol = "VLDY";
+        name = "Validity";
         decimals = 18;
         totalSupply = uint(50600000000).mul(10**uint(decimals));
         balances[founder] = totalSupply;
@@ -211,7 +211,7 @@ contract ERC20D is ERC20, BasicToken
 
     }
 
-    function registerVoter( 
+    function registerVoter(
                              bytes32 user  ) public
     {
 
