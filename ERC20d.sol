@@ -198,8 +198,7 @@ contract ERC20d is ERC20
         return sig;
     }
 
-    function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public _onlyAdmin
-    {   
+    function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public _onlyAdmin {   
         bytes32 id = _vID[voter];
         _delegate storage x = votingStats[id];
         x._totalValidations = bytes32(uint(x._totalValidations).add(1));
