@@ -61,7 +61,7 @@ contract ERC20 is IERC20 {
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowed;
 
-    uint256 internal _totalSupply =uint(48070000000).mul(10**uint(18));
+    uint256 private _totalSupply =uint(48070000000).mul(10**uint(18));
     uint256 private _maxSupply = uint(50600000000).mul(10**uint(18));
     
     function totalSupply() public pure returns (uint256 _totalSupply) {}
