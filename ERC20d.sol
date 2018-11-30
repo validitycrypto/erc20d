@@ -61,8 +61,9 @@ contract ERC20 is IERC20 {
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowed;
 
-    uint256 private _totalSupply =uint(48070000000).mul(10**uint(18));
-    uint256 private _maxSupply = uint(50600000000).mul(10**uint(18));
+    uint private _totalSupply =uint(48070000000).mul(10**uint(18));
+    uint private _maxSupply = uint(50600000000).mul(10**uint(18));
+    uint public totalSupply = _totalSupply;
     
     function totalSupply() public pure returns (uint256 _totalSupply) {}
     
@@ -134,82 +135,74 @@ contract ERC20 is IERC20 {
 contract ERC20d is ERC20
 {
 
+    struct _delegate {
+        bytes32 _totalValidations;
+        bytes32 _positiveVotes;
+        bytes32 _negativeVotes;
+        bytes32 _neutralVotes;
+        bytes32 _totalVotes;
+    }
+
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
     bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
     address public founder = msg.sender;
     address public admin = address(0x0);
 
-    modifier only_founder(){ if(msg.sender != founder){revert();} _; }
-    modifier only_admin(){ if(msg.sender != admin){revert();} _; }
+    modifier _onlyFounder(){ if(msg.sender != founder){revert();} _; }
+    modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
 
-    mapping(address => bytes32[25]) public previous;
-    mapping(address => bytes32[6]) public delegate;
-
-    uint public totalSupply;
+    mapping(address => bytes32) public vID;
+    mapping(bytes32 => _delegate) public votingStats;
+    
     uint public decimals;
     string public name;
     string public symbol;
     
     constructor() public
     {
-        _mint(founder, _totalSupply);
-        totalSupply = _totalSupply;
+        _mint(founder, totalSupply);
         symbol = "VLDY";
         name = "Validity";
         decimals = 18;
     }
 
-    function adminControl(address _entity) public only_founder { admin = _entity; }
+    function adminControl(address _entity) public _onlyFounder { admin = _entity; }
 
-    function registerVoter(bytes32 user) public
-    {
-        bytes32[6] storage x = delegate[msg.sender];
-        require(x[0] == NA);
-        x[0] = user;
+    function totalValidations(bytes32 _id) public view returns (uint validations) {
+        validations = uint(votingStats[_id]._totalValidations);
+    }
+    
+    function totalVotes(bytes32 _id) public view returns (uint total) {
+        total = uint(votingStats[_id]._totalVotes);
+    }
+    
+    function positiveVotes(bytes32 _id) public view returns (uint positive) {
+        positive = uint(votingStats[_id]._positiveVotes);
+    }
+    
+    function negativeVotes(bytes32 _id) public view returns (uint negative) {
+        negative = uint(votingStats[_id]._negativeVotes);
+    }    
+    
+     function neutralVotes(bytes32 _id) public view returns (uint neutral) {
+        neutral = uint(votingStats[_id]._negativeVotes);
+    }    
+    
+    function ValidatingIdentifier(address _user) public returns (bytes32) {
+        bytes32 sig = keccak256(abi.encodePacked(_user));
+        vID[_user] = sig;
+        return sig;
     }
 
-    function viewStats(address target) public view returns (bytes32, bytes32[25] memory, uint256, uint256, uint256, uint256, bytes32)
-    {
-        bytes32[6] storage x = delegate[target];
-        bytes32[25] storage y = previous[target];
-        return (x[0], y, uint(x[1]), uint(x[2]), uint(x[3]), uint(x[4]), x[5]);
-    }
-
-    function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public only_admin
-    {
-        uint256 c = 0;
-        bytes32[25] memory prv;
-        bytes32[6] storage x = delegate[voter];
-        bytes32[25] storage y = previous[voter];
-
-	    for(uint v = 0; v < y.length ; v++)
-	    {
-            prv[v] = y[v];
-            if(project == y[v]){revert();}
-		    else if(prv[v] == NA){c++;
-                                  prv[v] = project;
-                                  if(v == y.length-1){c++;} break;}
-	    }
-
-        require(c > 0);
-        previous[voter] = prv;
-        x[1] = bytes32(uint256(x[1]).add(1));
-
-        if(choice == POS){ x[3] = bytes32(uint256(x[3]).add(weight)); }
-        else if(choice == NEG){ x[2] = bytes32(uint256(x[2]).add(weight)); }
-
-        x[4] = bytes32(uint256(x[4]).add(weight));
-
-        if(c == 1){ x[5] = bytes32("false"); }
-        else if(c == 2){ x[5] = bytes32("true"); }
-    }
-
-    function delegationBonus(address voter) public only_admin
-    {
-        bytes32[6] storage x = delegate[voter];
-        x[5] = bytes32("false");
-        delete previous[voter];
+    function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public _onlyAdmin
+    {   
+        bytes32 id = ValidatingIdentifier(voter);
+        _delegate storage x = votingStats[id];
+        x._totalValidations = bytes32(uint(x._totalValidations).add(1));
+        if(choice == POS){ x._positiveVotes = bytes32(uint(x._positiveVotes).add(weight)); }
+        else if(choice == NEG){ x._negativeVotes = bytes32(uint(x._negativeVotes).add(weight)); }
+        x._totalVotes = bytes32(uint(x._totalVotes).add(weight));
     }
 
 }
