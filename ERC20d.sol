@@ -200,7 +200,7 @@ contract ERC20d is ERC20
 
     function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public _onlyAdmin
     {   
-        bytes32 id = ValidatingIdentifier(voter);
+        bytes32 id = _vID[voter];
         _delegate storage x = votingStats[id];
         x._totalValidations = bytes32(uint(x._totalValidations).add(1));
         if(choice == POS){ x._positiveVotes = bytes32(uint(x._positiveVotes).add(weight)); }
