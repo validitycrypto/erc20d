@@ -152,15 +152,14 @@ contract ERC20d is ERC20
     modifier _onlyFounder(){ if(msg.sender != founder){revert();} _; }
     modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
 
-    mapping(address => bytes32) public vID;
     mapping(bytes32 => _delegate) public votingStats;
-    
+    mapping(address => bytes32) public _vID;
+
     uint public decimals;
     string public name;
     string public symbol;
     
-    constructor() public
-    {
+    constructor() public {
         _mint(founder, totalSupply);
         symbol = "VLDY";
         name = "Validity";
@@ -168,6 +167,10 @@ contract ERC20d is ERC20
     }
 
     function adminControl(address _entity) public _onlyFounder { admin = _entity; }
+    
+    function vID(address _user) public view returns (bytes32 vID) {
+        vID = _vID[_user];
+    }
 
     function totalValidations(bytes32 _id) public view returns (uint validations) {
         validations = uint(votingStats[_id]._totalValidations);
@@ -191,7 +194,7 @@ contract ERC20d is ERC20
     
     function ValidatingIdentifier(address _user) public returns (bytes32) {
         bytes32 sig = keccak256(abi.encodePacked(_user));
-        vID[_user] = sig;
+        _vID[_user] = sig;
         return sig;
     }
 
