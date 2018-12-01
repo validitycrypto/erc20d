@@ -145,6 +145,7 @@ contract ERC20d is ERC20
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
+    bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
     bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
     address public founder = msg.sender;
     address public admin = address(0x0);
@@ -168,6 +169,10 @@ contract ERC20d is ERC20
 
     function adminControl(address _entity) public _onlyFounder { admin = _entity; }
     
+    function netural() returns (bytes32) {
+        return(bytes32("neutral"));
+    }
+    
     function vID(address _user) public view returns (bytes32 vID) {
         vID = _vID[_user];
     }
@@ -189,16 +194,18 @@ contract ERC20d is ERC20
     }    
     
      function neutralVotes(bytes32 _id) public view returns (uint neutral) {
-        neutral = uint(votingStats[_id]._negativeVotes);
+        neutral = uint(votingStats[_id]._neutralVotes);
     }    
     
-    function ValidatingIdentifier(address _user) public returns (bytes32) {
-        bytes32 sig = keccak256(abi.encodePacked(_user));
-        _vID[_user] = sig;
-        return sig;
+    function ValidatingIdentifier(address _user) public returns (bytes32 vID) {
+        assembly {
+            calldatacopy(0x0, 4, 32)
+            return(0x0, 32)
+        }    
     }
 
-    function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public _onlyAdmin {   
+    function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public _onlyAdmin
+    {   
         bytes32 id = _vID[voter];
         _delegate storage x = votingStats[id];
         x._totalValidations = bytes32(uint(x._totalValidations).add(1));
