@@ -147,6 +147,7 @@ contract ERC20d is ERC20
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
     bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
+
     address public founder = msg.sender;
     address public admin = address(0x0);
 
@@ -197,13 +198,23 @@ contract ERC20d is ERC20
         neutral = uint(votingStats[_id]._neutralVotes);
     }    
     
-    function ValidatingIdentifier(address _user) public returns (bytes32 vID) {
-        assembly {
-            calldatacopy(0x0, 4, 32)
-            return(0x0, 32)
-        }    
+    function ValidatingIdentifier(address _account) public returns (bytes vID) {
+        bytes32 prefix = 0x56616c6964697479;
+        bytes memory _new = new bytes(32);
+        bytes32 id = bytes32(_account);
+        for(uint v = 0; v < _new.length; v++){
+            uint prefixIndex = 24 + v;
+            if(v < 8){ 
+                _new[v] = prefix[prefixIndex];
+            } else if(v < 12){
+                _new[v] = 0xff;
+            } else{  
+                _new[v] = id[v];
+            }
+        }
+        vID = _new;
     }
-
+    
     function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public _onlyAdmin
     {   
         bytes32 id = _vID[voter];
