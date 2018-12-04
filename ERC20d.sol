@@ -53,16 +53,14 @@ contract ERC20d {
     
     mapping (address => mapping (address => uint256)) private _allowed;
     mapping (address => uint256) private _balances;
-    
     mapping(bytes => _delegate) private vStats;
     mapping(address => bytes) private vID;
     mapping(address => bool) public vAct;
 
-    uint private _totalSupply = uint(48070000000).mul(10**uint(18));
-    uint private _maxSupply = uint(50600000000).mul(10**uint(18));
-    
     address public founder = msg.sender;
     address public admin = address(0x0);
+    uint private _totalSupply;
+    uint private _maxSupply;
     string public name;
     string public symbol;
     uint public decimals;
@@ -71,6 +69,8 @@ contract ERC20d {
     modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
 
     constructor() public { 
+        _totalSupply = uint(48070000000).mul(10**uint(18));
+        _maxSupply = uint(50600000000).mul(10**uint(18));
         _mint(founder, _totalSupply); 
         name = "Validity";
         symbol = "VLDY";
