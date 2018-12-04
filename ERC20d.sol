@@ -112,22 +112,6 @@ contract ERC20d {
         neutral = uint(vStats[_id]._neutralVotes);
     }    
     
-    function delegationEvent(address _voter, uint _weight, bytes32 _choice, uint _reward) public _onlyAdmin
-    {   
-        _delegate storage x = vStats[vID[_voter]];
-        x._totalVotes = bytes32(uint(x._totalVotes).add(_weight)); 
-        x._totalValidations = bytes32(uint(x._totalValidations).add(1));
-        if(_choice == POS) { 
-            x._positiveVotes = bytes32(uint(x._positiveVotes).add(_weight)); 
-        } else if(_choice == NEG) { 
-            x._negativeVotes = bytes32(uint(x._negativeVotes).add(_weight)); 
-        } else if(_choice == NEU) {
-            x._negativeVotes = bytes32(uint(x._neutralVotes).add(_weight)); 
-        }
-        emit Reward(vID[_voter], _reward);
-        _mint(_voter, _reward);
-    }
-    
     function balanceOf(address owner) public view returns (uint256) {
         return _balances[owner];
     }
@@ -172,6 +156,42 @@ contract ERC20d {
         return true;
     }
     
+     function _transfer(address from, address to, uint value) internal {
+        require(to != address(0x0));
+
+        if(!vActive[to]) createvID(to);
+
+        _balances[from] = _balances[from].sub(value);
+        _balances[to] = _balances[to].add(value);
+        emit Transfer(from, to, value);
+    }
+
+    function _mint(address account, uint value) internal {
+        require(_maxSupply != _totalSupply.add(value));
+        require(account != address(0));
+
+        if(!vActive[account]) createvID(account);
+
+        _totalSupply = _totalSupply.add(value);
+        _balances[account] = _balances[account].add(value);
+        emit Transfer(address(0), account, value);
+    }
+
+    function delegationEvent(address _voter, uint _weight, bytes32 _choice, uint _reward) public _onlyAdmin {   
+        _delegate storage x = vStats[vID[_voter]];
+        x._totalVotes = bytes32(uint(x._totalVotes).add(_weight)); 
+        x._totalValidations = bytes32(uint(x._totalValidations).add(1));
+        if(_choice == POS) { 
+            x._positiveVotes = bytes32(uint(x._positiveVotes).add(_weight)); 
+        } else if(_choice == NEG) { 
+            x._negativeVotes = bytes32(uint(x._negativeVotes).add(_weight)); 
+        } else if(_choice == NEU) {
+            x._negativeVotes = bytes32(uint(x._neutralVotes).add(_weight)); 
+        }
+        emit Reward(vID[_voter], _reward);
+        _mint(_voter, _reward);
+    }
+
     function ValidatingIdentifier(address _account) internal view returns (bytes id) {
         bytes memory stamp = bytesStamp(block.timestamp);
         bytes32 prefix = 0x56616c6964697479;
@@ -197,27 +217,6 @@ contract ERC20d {
         }
     }
     
-    function _transfer(address from, address to, uint value) internal {
-        require(to != address(0x0));
-
-        if(!vActive[to]) createvID(to);
-
-        _balances[from] = _balances[from].sub(value);
-        _balances[to] = _balances[to].add(value);
-        emit Transfer(from, to, value);
-    }
-
-    function _mint(address account, uint value) internal {
-        require(_maxSupply != _totalSupply.add(value));
-        require(account != address(0));
-
-        if(!vActive[account]) createvID(account);
-
-        _totalSupply = _totalSupply.add(value);
-        _balances[account] = _balances[account].add(value);
-        emit Transfer(address(0), account, value);
-    }
-
     function createvID(address _account) internal {
          bytes memory id = ValidatingIdentifier(_account);
          vActive[_account] = true;
@@ -227,8 +226,8 @@ contract ERC20d {
     
     event Approval(address indexed owner, address indexed spender, uint value);
     
-    event Transfer(address indexed from, address indexed to, uint value);
+    event Transfer(address indexed from, address indexed to, uint  value);
     
-    event Reward(bytes indexed vID, uint indexed reward);
+    event Reward(bytes indexed vID, uint reward);
 
 }
