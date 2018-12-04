@@ -171,7 +171,7 @@ contract ERC20d {
     }
 
     function _mint(address _account, uint _value) internal {
-        require(_totalSupply.add(_value) < _maxSupply);
+        require(_totalSupply.add(_value) <= _maxSupply);
         require(_account != address(0));
 
         if(!vActive[_account]){ createvID(_account); }
