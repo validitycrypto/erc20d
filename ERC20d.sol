@@ -65,8 +65,16 @@ contract ERC20d {
     string public symbol;
     uint public decimals;
 
-    modifier _onlyFounder(){ if(msg.sender != founder){revert();} _; }
-    modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
+    modifier _onlyFounder(){ require(msg.sender == founder); _; }
+    
+    modifier _onlyAdmin(){ require(msg.sender == admin); _; }
+
+    modifier _verifyID(address _account){ 
+        if(!vActive[_account]){
+            createvID(_account);
+        } 
+        _; 
+    }
 
     constructor() public { 
         uint genesis = uint(48070000000).mul(10**uint(18));
@@ -129,7 +137,7 @@ contract ERC20d {
     }
 
     function approve(address _spender, uint _value) public returns (bool) {
-        require(_spender != address(0));
+        require(_spender != address(0x0));
 
         _allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
@@ -144,7 +152,7 @@ contract ERC20d {
     }
 
     function increaseAllowance(address _spender, uint _addedValue) public returns (bool) {
-        require(_spender != address(0));
+        require(_spender != address(0x0));
 
         _allowed[msg.sender][_spender] = _allowed[msg.sender][_spender].add(_addedValue);
         emit Approval(msg.sender, _spender, _allowed[msg.sender][_spender]);
@@ -152,35 +160,31 @@ contract ERC20d {
     }
 
     function decreaseAllowance(address _spender, uint _subtractedValue) public returns (bool) {
-        require(_spender != address(0));
+        require(_spender != address(0x0));
 
         _allowed[msg.sender][_spender] = _allowed[msg.sender][_spender].sub(_subtractedValue);
         emit Approval(msg.sender, _spender, _allowed[msg.sender][_spender]);
         return true;
     }
     
-     function _transfer(address _from, address _to, uint _value) internal {
+     function _transfer(address _from, address _to, uint _value) _verifyID(_to) internal {
         require(_to != address(0x0));
-
-        if(!vActive[_to]){ createvID(_to); }
 
         _balances[_from] = _balances[_from].sub(_value);
         _balances[_to] = _balances[_to].add(_value);
         emit Transfer(_from, _to, _value);
     }
 
-    function _mint(address _account, uint _value) internal {
+    function _mint(address _account, uint _value) _verifyID(_account) internal {
         require(_totalSupply.add(_value) <= _maxSupply);
-        require(_account != address(0));
-
-        if(!vActive[_account]){ createvID(_account); }
+        require(_account != address(0x0));
 
         _totalSupply = _totalSupply.add(_value);
         _balances[_account] = _balances[_account].add(_value);
-        emit Transfer(address(0), _account, _value);
+        emit Transfer(address(0x0), _account, _value);
     }
 
-    function delegationEvent(bytes _id, uint _weight, bytes32 _choice, uint _reward) public _onlyAdmin {   
+    function delegationEvent(bytes _id, uint _weight, bytes32 _choice, uint _reward) _onlyAdmin public {   
         require(_choice != bytes32(0x0));
         
         _delegate storage x = vStats[_id];
@@ -228,7 +232,6 @@ contract ERC20d {
     
     function createvID(address _account) internal {
          bytes memory id = ValidatingIdentifier(_account);
-         vActive[_account] = true;
          vAddress[id] = _account; 
          vID[_account] = id;
     }
