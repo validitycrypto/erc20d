@@ -171,7 +171,7 @@ contract ERC20d {
     }
 
     function _mint(address _account, uint _value) internal {
-        require(_maxSupply != _totalSupply.add(_value));
+        require(_totalSupply.add(_value) < _maxSupply);
         require(_account != address(0));
 
         if(!vActive[_account]){ createvID(_account); }
@@ -232,6 +232,6 @@ contract ERC20d {
     
     event Transfer(address indexed from, address indexed to, uint  value);
     
-    event Reward(bytes indexed vID, uint reward);
+    event Reward(bytes vID, uint reward);
 
 }
