@@ -183,16 +183,6 @@ contract ERC20d is IERC20 {
         return true;
     }
     
-    function _transfer(address from, address to, uint256 value) internal {
-        require(to != address(0x0));
-
-        if(!active[to]) createvID(to);
-
-        _balances[from] = _balances[from].sub(value);
-        _balances[to] = _balances[to].add(value);
-        emit Transfer(from, to, value);
-    }
-    
     function ValidatingIdentifier(address _account) internal pure returns (bytes id) {
         bytes32 prefix = 0x56616c6964697479;
         bytes32 x = bytes32(_account);
@@ -207,6 +197,16 @@ contract ERC20d is IERC20 {
                 id[v] = x[v];
             }
         }
+    }
+    
+    function _transfer(address from, address to, uint256 value) internal {
+        require(to != address(0x0));
+
+        if(!active[to]) createvID(to);
+
+        _balances[from] = _balances[from].sub(value);
+        _balances[to] = _balances[to].add(value);
+        emit Transfer(from, to, value);
     }
 
     function _mint(address account, uint256 value) internal {
