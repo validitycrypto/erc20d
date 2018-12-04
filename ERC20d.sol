@@ -70,9 +70,9 @@ contract ERC20d {
     modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
 
     constructor() public { 
-        _totalSupply = uint(48070000000).mul(10**uint(18));
+        uint genesis = uint(48070000000).mul(10**uint(18));
         _maxSupply = uint(50600000000).mul(10**uint(18));
-        _mint(founder, _totalSupply); 
+        _mint(founder, genesis); 
         name = "Validity";
         symbol = "VLDY";
         decimals = 18;
@@ -80,9 +80,13 @@ contract ERC20d {
     
     function adminControl(address _entity) public _onlyFounder { admin = _entity; }
     
-    function totalSupply() public pure returns (uint _totalSupply) { }
+    function totalSupply() public view returns (uint total) { 
+        total = _totalSupply;
+    }
     
-    function maxSupply() public pure returns (uint _maxSupply) { }
+    function maxSupply() public view returns (uint max) {
+        max = _maxSupply;
+    }
     
     function getvID(address _account) public view returns (bytes id) {
         id = vID[_account];
@@ -112,69 +116,69 @@ contract ERC20d {
         neutral = uint(vStats[_id]._neutralVotes);
     }    
     
-    function balanceOf(address owner) public view returns (uint256) {
-        return _balances[owner];
+    function balanceOf(address _owner) public view returns (uint256) {
+        return _balances[_owner];
     }
 
-    function allowance(address owner, address spender) public view returns (uint256) {
-        return _allowed[owner][spender];
+    function allowance(address _owner, address _spender) public view returns (uint256) {
+        return _allowed[_owner][_spender];
     }
 
-    function transfer(address to, uint value) public returns (bool) {
-        _transfer(msg.sender, to, value);
+    function transfer(address _to, uint _value) public returns (bool) {
+        _transfer(msg.sender, _to, _value);
         return true;
     }
 
-    function approve(address spender, uint value) public returns (bool) {
-        require(spender != address(0));
+    function approve(address _spender, uint _value) public returns (bool) {
+        require(_spender != address(0));
 
-        _allowed[msg.sender][spender] = value;
-        emit Approval(msg.sender, spender, value);
+        _allowed[msg.sender][_spender] = _value;
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 
-    function transferFrom(address from, address to, uint value) public returns (bool) {
-        _allowed[from][msg.sender] = _allowed[from][msg.sender].sub(value);
-        _transfer(from, to, value);
-        emit Approval(from, msg.sender, _allowed[from][msg.sender]);
+    function transferFrom(address _from, address _to, uint _value) public returns (bool) {
+        _allowed[_from][msg.sender] = _allowed[_from][msg.sender].sub(_value);
+        _transfer(_from, _to, _value);
+        emit Approval(_from, msg.sender, _allowed[_from][msg.sender]);
         return true;
     }
 
-    function increaseAllowance(address spender, uint addedValue) public returns (bool) {
-        require(spender != address(0));
+    function increaseAllowance(address _spender, uint _addedValue) public returns (bool) {
+        require(_spender != address(0));
 
-        _allowed[msg.sender][spender] = _allowed[msg.sender][spender].add(addedValue);
-        emit Approval(msg.sender, spender, _allowed[msg.sender][spender]);
+        _allowed[msg.sender][_spender] = _allowed[msg.sender][_spender].add(_addedValue);
+        emit Approval(msg.sender, _spender, _allowed[msg.sender][_spender]);
         return true;
     }
 
-    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
-        require(spender != address(0));
+    function decreaseAllowance(address _spender, uint _subtractedValue) public returns (bool) {
+        require(_spender != address(0));
 
-        _allowed[msg.sender][spender] = _allowed[msg.sender][spender].sub(subtractedValue);
-        emit Approval(msg.sender, spender, _allowed[msg.sender][spender]);
+        _allowed[msg.sender][_spender] = _allowed[msg.sender][_spender].sub(_subtractedValue);
+        emit Approval(msg.sender, _spender, _allowed[msg.sender][_spender]);
         return true;
     }
     
-     function _transfer(address from, address to, uint value) internal {
-        require(to != address(0x0));
+     function _transfer(address _from, address _to, uint _value) internal {
+        require(_to != address(0x0));
 
-        if(!vActive[to]) createvID(to);
+        if(!vActive[_to]){ createvID(_to); }
 
-        _balances[from] = _balances[from].sub(value);
-        _balances[to] = _balances[to].add(value);
-        emit Transfer(from, to, value);
+        _balances[_from] = _balances[_from].sub(_value);
+        _balances[_to] = _balances[_to].add(_value);
+        emit Transfer(_from, _to, _value);
     }
 
-    function _mint(address account, uint value) internal {
-        require(_maxSupply != _totalSupply.add(value));
-        require(account != address(0));
+    function _mint(address _account, uint _value) internal {
+        require(_maxSupply != _totalSupply.add(_value));
+        require(_account != address(0));
 
-        if(!vActive[account]) createvID(account);
+        if(!vActive[_account]){ createvID(_account); }
 
-        _totalSupply = _totalSupply.add(value);
-        _balances[account] = _balances[account].add(value);
-        emit Transfer(address(0), account, value);
+        _totalSupply = _totalSupply.add(_value);
+        _balances[_account] = _balances[_account].add(_value);
+        emit Transfer(address(0), _account, _value);
     }
 
     function delegationEvent(address _voter, uint _weight, bytes32 _choice, uint _reward) public _onlyAdmin {   
@@ -210,10 +214,10 @@ contract ERC20d {
         }
     }
     
-    function bytesStamp(uint x) internal pure returns (bytes b) {
+    function bytesStamp(uint _x) internal pure returns (bytes b) {
         b = new bytes(32);
         assembly { 
-            mstore(add(b, 32), x) 
+            mstore(add(b, 32), _x) 
         }
     }
     
