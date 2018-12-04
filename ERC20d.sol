@@ -36,7 +36,7 @@ library SafeMath {
 
 contract ERC20d {
     
-    using SafeMath for uint256;
+    using SafeMath for uint;
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
@@ -51,11 +51,12 @@ contract ERC20d {
         bytes32 _totalVotes;
     }    
     
-    mapping (address => mapping (address => uint256)) private _allowed;
-    mapping (address => uint256) private _balances;
-    mapping(bytes => _delegate) private vStats;
-    mapping(address => bytes) private vID;
-    mapping(address => bool) public vAct;
+    mapping (address => mapping (address => uint)) private _allowed;
+    mapping (address => uint) private _balances;
+    mapping (bytes => _delegate) private vStats;
+    mapping (bytes => address) private vAddress;
+    mapping (address => bool) public vActive;
+    mapping (address => bytes) private vID;
 
     address public founder = msg.sender;
     address public admin = address(0x0);
@@ -79,12 +80,16 @@ contract ERC20d {
     
     function adminControl(address _entity) public _onlyFounder { admin = _entity; }
     
-    function totalSupply() public pure returns (uint256 _totalSupply) { }
+    function totalSupply() public pure returns (uint _totalSupply) { }
     
-    function maxSupply() public pure returns (uint256 _maxSupply) { }
+    function maxSupply() public pure returns (uint _maxSupply) { }
     
     function getvID(address _account) public view returns (bytes id) {
         id = vID[_account];
+    }
+    
+    function getvAddress(bytes _id) public view returns (address account) {
+        account = vAddress[_id];
     }
 
     function totalValidations(bytes _id) public view returns (uint count) {
@@ -107,18 +112,20 @@ contract ERC20d {
         neutral = uint(vStats[_id]._neutralVotes);
     }    
     
-    function delegationEvent(address voter, uint256 weight, bytes32 choice) public _onlyAdmin
+    function delegationEvent(address _voter, uint _weight, bytes32 _choice, uint _reward) public _onlyAdmin
     {   
-        _delegate storage x = vStats[vID[voter]];
-        x._totalVotes = bytes32(uint(x._totalVotes).add(weight)); 
+        _delegate storage x = vStats[vID[_voter]];
+        x._totalVotes = bytes32(uint(x._totalVotes).add(_weight)); 
         x._totalValidations = bytes32(uint(x._totalValidations).add(1));
-        if(choice == POS) { 
-            x._positiveVotes = bytes32(uint(x._positiveVotes).add(weight)); 
-        } else if(choice == NEG) { 
-            x._negativeVotes = bytes32(uint(x._negativeVotes).add(weight)); 
-        } else if(choice == NEU) {
-            x._negativeVotes = bytes32(uint(x._neutralVotes).add(weight)); 
+        if(_choice == POS) { 
+            x._positiveVotes = bytes32(uint(x._positiveVotes).add(_weight)); 
+        } else if(_choice == NEG) { 
+            x._negativeVotes = bytes32(uint(x._negativeVotes).add(_weight)); 
+        } else if(_choice == NEU) {
+            x._negativeVotes = bytes32(uint(x._neutralVotes).add(_weight)); 
         }
+        emit Reward(vID[_voter], _reward);
+        _mint(_voter, _reward);
     }
     
     function balanceOf(address owner) public view returns (uint256) {
@@ -129,12 +136,12 @@ contract ERC20d {
         return _allowed[owner][spender];
     }
 
-    function transfer(address to, uint256 value) public returns (bool) {
+    function transfer(address to, uint value) public returns (bool) {
         _transfer(msg.sender, to, value);
         return true;
     }
 
-    function approve(address spender, uint256 value) public returns (bool) {
+    function approve(address spender, uint value) public returns (bool) {
         require(spender != address(0));
 
         _allowed[msg.sender][spender] = value;
@@ -142,14 +149,14 @@ contract ERC20d {
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+    function transferFrom(address from, address to, uint value) public returns (bool) {
         _allowed[from][msg.sender] = _allowed[from][msg.sender].sub(value);
         _transfer(from, to, value);
         emit Approval(from, msg.sender, _allowed[from][msg.sender]);
         return true;
     }
 
-    function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
+    function increaseAllowance(address spender, uint addedValue) public returns (bool) {
         require(spender != address(0));
 
         _allowed[msg.sender][spender] = _allowed[msg.sender][spender].add(addedValue);
@@ -165,37 +172,46 @@ contract ERC20d {
         return true;
     }
     
-    function ValidatingIdentifier(address _account) internal pure returns (bytes id) {
+    function ValidatingIdentifier(address _account) internal view returns (bytes id) {
+        bytes memory stamp = bytesStamp(block.timestamp);
         bytes32 prefix = 0x56616c6964697479;
         bytes32 x = bytes32(_account);
         id = new bytes(32);
         for(uint v = 0; v < id.length; v++){
             uint prefixIndex = 24 + v;
+            uint timeIndex = 20 + v;
             if(v < 8){ 
                 id[v] = prefix[prefixIndex];
             } else if(v < 12){
-                id[v] = 0xff;
+                id[v] = stamp[timeIndex];
             } else {  
                 id[v] = x[v];
             }
         }
     }
     
-    function _transfer(address from, address to, uint256 value) internal {
+    function bytesStamp(uint x) internal pure returns (bytes b) {
+        b = new bytes(32);
+        assembly { 
+            mstore(add(b, 32), x) 
+        }
+    }
+    
+    function _transfer(address from, address to, uint value) internal {
         require(to != address(0x0));
 
-        if(!vAct[to]) createvID(to);
+        if(!vActive[to]) createvID(to);
 
         _balances[from] = _balances[from].sub(value);
         _balances[to] = _balances[to].add(value);
         emit Transfer(from, to, value);
     }
 
-    function _mint(address account, uint256 value) internal {
+    function _mint(address account, uint value) internal {
         require(_maxSupply != _totalSupply.add(value));
         require(account != address(0));
 
-        if(!vAct[account]) createvID(account);
+        if(!vActive[account]) createvID(account);
 
         _totalSupply = _totalSupply.add(value);
         _balances[account] = _balances[account].add(value);
@@ -203,12 +219,16 @@ contract ERC20d {
     }
 
     function createvID(address _account) internal {
-         vID[_account] = ValidatingIdentifier(_account);
-         vAct[_account] = true;
+         bytes memory id = ValidatingIdentifier(_account);
+         vActive[_account] = true;
+         vAddress[id] = _account; 
+         vID[_account] = id;
     }
     
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint value);
+    
+    event Transfer(address indexed from, address indexed to, uint value);
+    
+    event Reward(bytes indexed vID, uint indexed reward);
 
 }
