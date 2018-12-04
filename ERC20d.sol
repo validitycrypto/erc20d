@@ -57,10 +57,8 @@ interface IERC20 {
 contract ERC20d is IERC20 {
     
     using SafeMath for uint256;
-    
     mapping (address => mapping (address => uint256)) private _allowed;
     mapping (address => uint256) private _balances;
-    
     mapping(bytes => _delegate) private votingStats;
     mapping(address => bytes) private vID;
     mapping(address => bool) public active;
@@ -89,13 +87,6 @@ contract ERC20d is IERC20 {
 
     modifier _onlyFounder(){ if(msg.sender != founder){revert();} _; }
     modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
-    
-    modifier _isActive(address _account) {
-        if(!active[_account]){ 
-            createvID(_account);
-        }
-     _;
-    }
 
     constructor() public {
         _mint(founder, _totalSupply);
@@ -192,8 +183,10 @@ contract ERC20d is IERC20 {
         return true;
     }
     
-    function _transfer(address from, address to, uint256 value) _isActive(to) internal {
+    function _transfer(address from, address to, uint256 value) internal {
         require(to != address(0x0));
+
+        if(!active[to]) createvID(to);
 
         _balances[from] = _balances[from].sub(value);
         _balances[to] = _balances[to].add(value);
@@ -216,10 +209,12 @@ contract ERC20d is IERC20 {
         }
     }
 
-    function _mint(address account, uint256 value) _isActive(account) internal {
+    function _mint(address account, uint256 value) internal {
         require(_maxSupply != _totalSupply.add(value));
         require(account != address(0));
-        
+
+        if(!active[account]) createvID(account);
+
         _totalSupply = _totalSupply.add(value);
         _balances[account] = _balances[account].add(value);
         emit Transfer(address(0), account, value);
