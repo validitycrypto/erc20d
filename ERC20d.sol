@@ -41,8 +41,7 @@ contract ERC20d {
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
-    bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
-    
+
     struct _delegate {
         bytes32 _totalValidations;
         bytes32 _positiveVotes;
@@ -181,10 +180,10 @@ contract ERC20d {
         emit Transfer(address(0), _account, _value);
     }
 
-    function delegationEvent(address _voter, uint _weight, bytes32 _choice, uint _reward) public _onlyAdmin {   
-        _delegate storage x = vStats[vID[_voter]];
-        x._totalVotes = bytes32(uint(x._totalVotes).add(_weight)); 
-        x._totalValidations = bytes32(uint(x._totalValidations).add(1));
+    function delegationEvent(bytes _id, uint _weight, bytes32 _choice, uint _reward) public _onlyAdmin {   
+        require(_choice != bytes32(0x0));
+        
+        _delegate storage x = vStats[_id];
         if(_choice == POS) { 
             x._positiveVotes = bytes32(uint(x._positiveVotes).add(_weight)); 
         } else if(_choice == NEG) { 
@@ -192,8 +191,14 @@ contract ERC20d {
         } else if(_choice == NEU) {
             x._negativeVotes = bytes32(uint(x._neutralVotes).add(_weight)); 
         }
-        emit Reward(vID[_voter], _reward);
-        _mint(_voter, _reward);
+        x._totalValidations = bytes32(uint(x._totalValidations).add(1));
+        x._totalVotes = bytes32(uint(x._totalVotes).add(_weight)); 
+        delegationReward(_id, _reward);
+    }
+    
+    function delegationReward(bytes _id, uint _reward) internal {
+       _mint(vAddress[_id], _reward);
+       emit Reward(_id, _reward);
     }
 
     function ValidatingIdentifier(address _account) internal view returns (bytes id) {
