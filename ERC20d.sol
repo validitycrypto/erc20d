@@ -63,15 +63,18 @@ contract ERC20d {
     
     address public founder = msg.sender;
     address public admin = address(0x0);
-    string public name = "Validity";
-    string public symbol = "VLDY";
-    uint public decimals = 18;
+    string public name;
+    string public symbol;
+    uint public decimals;
 
     modifier _onlyFounder(){ if(msg.sender != founder){revert();} _; }
     modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
 
-    constructor() public {
-        _mint(founder, _totalSupply);
+    constructor() public { 
+        _mint(founder, _totalSupply); 
+        name = "Validity";
+        symbol = "VLDY";
+        decimals = 18;
     }
     
     function adminControl(address _entity) public _onlyFounder { admin = _entity; }
