@@ -57,42 +57,41 @@ interface IERC20 {
 contract ERC20d is IERC20 {
     
     using SafeMath for uint256;
-    mapping (address => mapping (address => uint256)) private _allowed;
-    mapping (address => uint256) private _balances;
-    mapping(bytes => _delegate) private votingStats;
-    mapping(address => bytes) private vID;
-    mapping(address => bool) public active;
-
-    struct _delegate {
-        bytes32 _totalValidations;
-        bytes32 _positiveVotes;
-        bytes32 _negativeVotes;
-        bytes32 _neutralVotes;
-        bytes32 _totalVotes;
-    }
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
     bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
     
+    struct _delegate {
+        bytes32 _totalValidations;
+        bytes32 _positiveVotes;
+        bytes32 _negativeVotes;
+        bytes32 _neutralVotes;
+        bytes32 _totalVotes;
+    }    
+    
+    mapping (address => mapping (address => uint256)) private _allowed;
+    mapping (address => uint256) private _balances;
+    
+    mapping(bytes => _delegate) private vStats;
+    mapping(address => bytes) private vID;
+    mapping(address => bool) public vAct;
+
     uint private _totalSupply = uint(48070000000).mul(10**uint(18));
     uint private _maxSupply = uint(50600000000).mul(10**uint(18));
     
     address public founder = msg.sender;
     address public admin = address(0x0);
-    uint public decimals;
-    string public name;
-    string public symbol;
+    string public name = "Validity";
+    string public symbol = "VLDY";
+    uint public decimals = 18;
 
     modifier _onlyFounder(){ if(msg.sender != founder){revert();} _; }
     modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
 
     constructor() public {
         _mint(founder, _totalSupply);
-        symbol = "VLDY";
-        name = "Validity";
-        decimals = 18;
     }
     
     function adminControl(address _entity) public _onlyFounder { admin = _entity; }
@@ -106,28 +105,28 @@ contract ERC20d is IERC20 {
     }
 
     function totalValidations(bytes _id) public view returns (uint count) {
-        count = uint(votingStats[_id]._totalValidations);
+        count = uint(vStats[_id]._totalValidations);
     }
     
     function totalVotes(bytes _id) public view returns (uint total) {
-        total = uint(votingStats[_id]._totalVotes);
+        total = uint(vStats[_id]._totalVotes);
     }
     
     function positiveVotes(bytes _id) public view returns (uint positive) {
-        positive = uint(votingStats[_id]._positiveVotes);
+        positive = uint(vStats[_id]._positiveVotes);
     }
     
     function negativeVotes(bytes _id) public view returns (uint negative) {
-        negative = uint(votingStats[_id]._negativeVotes);
+        negative = uint(vStats[_id]._negativeVotes);
     }    
     
      function neutralVotes(bytes _id) public view returns (uint neutral) {
-        neutral = uint(votingStats[_id]._neutralVotes);
+        neutral = uint(vStats[_id]._neutralVotes);
     }    
     
     function delegationEvent(address voter, uint256 weight, bytes32 choice) public _onlyAdmin
     {   
-        _delegate storage x = votingStats[vID[voter]];
+        _delegate storage x = vStats[vID[voter]];
         x._totalVotes = bytes32(uint(x._totalVotes).add(weight)); 
         x._totalValidations = bytes32(uint(x._totalValidations).add(1));
         if(choice == POS) { 
@@ -202,7 +201,7 @@ contract ERC20d is IERC20 {
     function _transfer(address from, address to, uint256 value) internal {
         require(to != address(0x0));
 
-        if(!active[to]) createvID(to);
+        if(!vAct[to]) createvID(to);
 
         _balances[from] = _balances[from].sub(value);
         _balances[to] = _balances[to].add(value);
@@ -213,7 +212,7 @@ contract ERC20d is IERC20 {
         require(_maxSupply != _totalSupply.add(value));
         require(account != address(0));
 
-        if(!active[account]) createvID(account);
+        if(!vAct[account]) createvID(account);
 
         _totalSupply = _totalSupply.add(value);
         _balances[account] = _balances[account].add(value);
@@ -222,7 +221,7 @@ contract ERC20d is IERC20 {
 
     function createvID(address _account) internal {
          vID[_account] = ValidatingIdentifier(_account);
-         active[_account] = true;
+         vAct[_account] = true;
     }
 
 }
