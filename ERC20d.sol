@@ -54,21 +54,100 @@ interface IERC20 {
     
 }
 
-contract ERC20 is IERC20 {
+contract ERC20d is IERC20 {
     
     using SafeMath for uint256;
-
-    mapping (address => uint256) private _balances;
+    
     mapping (address => mapping (address => uint256)) private _allowed;
+    mapping (address => uint256) private _balances;
+    
+    mapping(bytes => _delegate) private votingStats;
+    mapping(address => bytes) private vID;
+    mapping(address => bool) public active;
 
-    uint private _totalSupply =uint(48070000000).mul(10**uint(18));
+    struct _delegate {
+        bytes32 _totalValidations;
+        bytes32 _positiveVotes;
+        bytes32 _negativeVotes;
+        bytes32 _neutralVotes;
+        bytes32 _totalVotes;
+    }
+
+    bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
+    bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
+    bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
+    bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    
+    uint private _totalSupply = uint(48070000000).mul(10**uint(18));
     uint private _maxSupply = uint(50600000000).mul(10**uint(18));
-    uint public totalSupply = _totalSupply;
     
-    function totalSupply() public pure returns (uint256 _totalSupply) {}
-    
-    function maxSupply() public pure returns (uint256 _maxSupply) {}
+    address public founder = msg.sender;
+    address public admin = address(0x0);
+    uint public decimals;
+    string public name;
+    string public symbol;
 
+    modifier _onlyFounder(){ if(msg.sender != founder){revert();} _; }
+    modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
+    
+    modifier _isActive(address _account) {
+        if(!active[_account]){ 
+            createvID(_account);
+        }
+     _;
+    }
+
+    constructor() public {
+        _mint(founder, _totalSupply);
+        symbol = "VLDY";
+        name = "Validity";
+        decimals = 18;
+    }
+    
+    function adminControl(address _entity) public _onlyFounder { admin = _entity; }
+    
+    function totalSupply() public pure returns (uint256 _totalSupply) { }
+    
+    function maxSupply() public pure returns (uint256 _maxSupply) { }
+    
+    function getvID(address _account) public view returns (bytes id) {
+        id = vID[_account];
+    }
+
+    function totalValidations(bytes _id) public view returns (uint count) {
+        count = uint(votingStats[_id]._totalValidations);
+    }
+    
+    function totalVotes(bytes _id) public view returns (uint total) {
+        total = uint(votingStats[_id]._totalVotes);
+    }
+    
+    function positiveVotes(bytes _id) public view returns (uint positive) {
+        positive = uint(votingStats[_id]._positiveVotes);
+    }
+    
+    function negativeVotes(bytes _id) public view returns (uint negative) {
+        negative = uint(votingStats[_id]._negativeVotes);
+    }    
+    
+     function neutralVotes(bytes _id) public view returns (uint neutral) {
+        neutral = uint(votingStats[_id]._neutralVotes);
+    }    
+    
+    function delegationEvent(address voter, uint256 weight, bytes32 choice) public _onlyAdmin
+    {   
+        _delegate storage x = votingStats[vID[voter]];
+        x._totalVotes = bytes32(uint(x._totalVotes).add(weight)); 
+        x._totalValidations = bytes32(uint(x._totalValidations).add(1));
+        if(choice == POS) { 
+            x._positiveVotes = bytes32(uint(x._positiveVotes).add(weight)); 
+        } else if(choice == NEG) { 
+            x._negativeVotes = bytes32(uint(x._negativeVotes).add(weight)); 
+        } else if(choice == NEU) {
+            x._negativeVotes = bytes32(uint(x._neutralVotes).add(weight)); 
+        }
+    }
+    
     function balanceOf(address owner) public view returns (uint256) {
         return _balances[owner];
     }
@@ -112,16 +191,32 @@ contract ERC20 is IERC20 {
         emit Approval(msg.sender, spender, _allowed[msg.sender][spender]);
         return true;
     }
-
-    function _transfer(address from, address to, uint256 value) internal {
-        require(to != address(0));
+    
+    function _transfer(address from, address to, uint256 value) _isActive(to) internal {
+        require(to != address(0x0));
 
         _balances[from] = _balances[from].sub(value);
         _balances[to] = _balances[to].add(value);
         emit Transfer(from, to, value);
     }
+    
+    function ValidatingIdentifier(address _account) internal pure returns (bytes id) {
+        bytes32 prefix = 0x56616c6964697479;
+        bytes32 x = bytes32(_account);
+        id = new bytes(32);
+        for(uint v = 0; v < id.length; v++){
+            uint prefixIndex = 24 + v;
+            if(v < 8){ 
+                id[v] = prefix[prefixIndex];
+            } else if(v < 12){
+                id[v] = 0xff;
+            } else {  
+                id[v] = x[v];
+            }
+        }
+    }
 
-    function _mint(address account, uint256 value) internal {
+    function _mint(address account, uint256 value) _isActive(account) internal {
         require(_maxSupply != _totalSupply.add(value));
         require(account != address(0));
         
@@ -130,99 +225,9 @@ contract ERC20 is IERC20 {
         emit Transfer(address(0), account, value);
     }
 
-}
-
-contract ERC20d is ERC20
-{
-
-    struct _delegate {
-        bytes32 _totalValidations;
-        bytes32 _positiveVotes;
-        bytes32 _negativeVotes;
-        bytes32 _neutralVotes;
-        bytes32 _totalVotes;
-    }
-
-    bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
-    bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
-    bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
-    bytes32 constant NA = 0x0000000000000000000000000000000000000000000000000000000000000000;
-
-    address public founder = msg.sender;
-    address public admin = address(0x0);
-
-    modifier _onlyFounder(){ if(msg.sender != founder){revert();} _; }
-    modifier _onlyAdmin(){ if(msg.sender != admin){revert();} _; }
-
-    mapping(bytes32 => _delegate) public votingStats;
-    mapping(address => bytes32) public _vID;
-
-    uint public decimals;
-    string public name;
-    string public symbol;
-    
-    constructor() public {
-        _mint(founder, totalSupply);
-        symbol = "VLDY";
-        name = "Validity";
-        decimals = 18;
-    }
-
-    function adminControl(address _entity) public _onlyFounder { admin = _entity; }
-    
-    function netural() returns (bytes32) {
-        return(bytes32("neutral"));
-    }
-    
-    function vID(address _user) public view returns (bytes32 vID) {
-        vID = _vID[_user];
-    }
-
-    function totalValidations(bytes32 _id) public view returns (uint validations) {
-        validations = uint(votingStats[_id]._totalValidations);
-    }
-    
-    function totalVotes(bytes32 _id) public view returns (uint total) {
-        total = uint(votingStats[_id]._totalVotes);
-    }
-    
-    function positiveVotes(bytes32 _id) public view returns (uint positive) {
-        positive = uint(votingStats[_id]._positiveVotes);
-    }
-    
-    function negativeVotes(bytes32 _id) public view returns (uint negative) {
-        negative = uint(votingStats[_id]._negativeVotes);
-    }    
-    
-     function neutralVotes(bytes32 _id) public view returns (uint neutral) {
-        neutral = uint(votingStats[_id]._neutralVotes);
-    }    
-    
-    function ValidatingIdentifier(address _account) public returns (bytes vID) {
-        bytes32 prefix = 0x56616c6964697479;
-        bytes memory _new = new bytes(32);
-        bytes32 id = bytes32(_account);
-        for(uint v = 0; v < _new.length; v++){
-            uint prefixIndex = 24 + v;
-            if(v < 8){ 
-                _new[v] = prefix[prefixIndex];
-            } else if(v < 12){
-                _new[v] = 0xff;
-            } else{  
-                _new[v] = id[v];
-            }
-        }
-        vID = _new;
-    }
-    
-    function delegationEvent(address voter, uint256 weight, bytes32 choice, bytes32 project) public _onlyAdmin
-    {   
-        bytes32 id = _vID[voter];
-        _delegate storage x = votingStats[id];
-        x._totalValidations = bytes32(uint(x._totalValidations).add(1));
-        if(choice == POS){ x._positiveVotes = bytes32(uint(x._positiveVotes).add(weight)); }
-        else if(choice == NEG){ x._negativeVotes = bytes32(uint(x._negativeVotes).add(weight)); }
-        x._totalVotes = bytes32(uint(x._totalVotes).add(weight));
+    function createvID(address _account) internal {
+         vID[_account] = ValidatingIdentifier(_account);
+         active[_account] = true;
     }
 
 }
