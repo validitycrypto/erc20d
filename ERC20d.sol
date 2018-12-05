@@ -137,6 +137,7 @@ contract ERC20d {
     }
 
     function approve(address _spender, uint _value) public returns (bool) {
+        require(_allowed[msg.sender][_spender] == uint(0));
         require(_spender != address(0x0));
 
         _allowed[msg.sender][_spender] = _value;
