@@ -233,6 +233,7 @@ contract ERC20d {
     
     function createvID(address _account) internal {
          bytes memory id = ValidatingIdentifier(_account);
+         vActive[_account] = true;
          vAddress[id] = _account; 
          vID[_account] = id;
     }
