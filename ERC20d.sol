@@ -200,11 +200,6 @@ contract ERC20d {
         x._totalVotes = bytes32(uint(x._totalVotes).add(_weight)); 
         delegationReward(_id, _reward);
     }
-    
-    function delegationReward(bytes _id, uint _reward) internal {
-       _mint(vAddress[_id], _reward);
-       emit Reward(_id, _reward);
-    }
 
     function ValidatingIdentifier(address _account) internal view returns (bytes id) {
         bytes memory stamp = bytesStamp(block.timestamp);
@@ -230,6 +225,11 @@ contract ERC20d {
             mstore(add(b, 32), _x) 
         }
     }
+
+    function delegationReward(bytes _id, uint _reward) internal {
+       _mint(vAddress[_id], _reward);
+       emit Reward(_id, _reward);
+    }
     
     function createvID(address _account) internal {
          bytes memory id = ValidatingIdentifier(_account);
@@ -237,6 +237,9 @@ contract ERC20d {
          vAddress[id] = _account; 
          vID[_account] = id;
     }
+    
+    
+    
     
     event Approval(address indexed owner, address indexed spender, uint value);
     
