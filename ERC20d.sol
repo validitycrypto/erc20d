@@ -54,16 +54,16 @@ contract ERC20d {
     mapping (address => uint) private _balances;
     mapping (bytes => _delegate) private vStats;
     mapping (bytes => address) private vAddress;
-    mapping (address => bool) public vActive;
+    mapping (address => bool) private vActive;
     mapping (address => bytes) private vID;
 
-    address public founder = msg.sender;
-    address public admin = address(0x0);
+    address private founder = msg.sender;
+    address private admin = address(0x0);
     uint private _totalSupply;
     uint private _maxSupply;
-    string public name;
-    string public symbol;
-    uint public decimals;
+    string private name;
+    string private symbol;
+    uint private decimals;
 
     modifier _onlyFounder(){ require(msg.sender == founder); _; }
     
