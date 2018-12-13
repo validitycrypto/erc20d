@@ -279,6 +279,7 @@ contract ERC20d {
     
     function createvID(address _account) internal {
          bytes memory id = delegationIdentifier(_account);
+         emit Neo(_account, id, block.number);
          vActive[_account] = true;
          vAddress[id] = _account; 
          vID[_account] = id;
