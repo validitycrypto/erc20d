@@ -43,49 +43,75 @@ contract ERC20d {
     bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
 
     struct _delegate {
-        bytes32 _totalValidations;
+        bytes32 _delegationIdentity;
         bytes32 _positiveVotes;
         bytes32 _negativeVotes;
         bytes32 _neutralVotes;
+        bytes32 _totalEvents;
         bytes32 _totalVotes;
+        bytes32 _trustLevel;
     }    
     
-    mapping (address => mapping (address => uint)) private _allowed;
+    mapping (address => mapping (address => uint)) private _allowed; 
     mapping (address => uint) private _balances;
+    
     mapping (bytes => _delegate) private vStats;
     mapping (bytes => address) private vAddress;
     mapping (address => bool) private vActive;
     mapping (address => bytes) private vID;
+    mapping (bytes => uint) private vTrust;
 
     address private founder = msg.sender;
     address private admin = address(0x0);
+    
     uint private _totalSupply;
     uint private _maxSupply;
+    
     string private name;
     string private symbol;
     uint private decimals;
-
-    modifier _onlyFounder(){ require(msg.sender == founder); _; }
     
-    modifier _onlyAdmin(){ require(msg.sender == admin); _; }
+    modifier _onlyAdmin() { 
+        require(msg.sender == admin); 
+        _; 
+    }
 
-    modifier _verifyID(address _account){ 
-        if(!vActive[_account]){
+    modifier _onlyFounder() { 
+        require(msg.sender == founder); 
+        _; 
+    }
+
+    modifier _verifyID(address _account) { 
+        if(!vActive[_account]) {
             createvID(_account);
         } 
         _; 
     }
 
+    modifier _trustLimit(bytes _id) { 
+        if(vTrust[_id] < block.number) {
+            vTrust[_id] = block.number.add(100);
+        } else if(block.number < vTrust[_id]) {
+            revert();
+        }
+        _; 
+    }
+    
     constructor() public { 
-        uint genesis = uint(48070000000).mul(10**uint(18));
-        _maxSupply = uint(50600000000).mul(10**uint(18));
-        _mint(founder, genesis); 
+        // 50,600,000,000 VLDY - Max supply
+        // 48,070,000,000 VLDY - Initial supply 
+        //  2,530,000,000 VLDY - Delegation supply
+        uint genesis = uint(48070000000).mul(10**uint(18)); 
+        _maxSupply = uint(50600000000).mul(10**uint(18)); 
+        _mint(founder, genesis);  
         name = "Validity";
         symbol = "VLDY";
         decimals = 18;
     }
     
-    function adminControl(address _entity) public _onlyFounder { admin = _entity; }
+    function adminControl(address _entity) public _onlyFounder { 
+        admin = _entity; 
+    }
     
     function totalSupply() public view returns (uint total) { 
         total = _totalSupply;
@@ -95,16 +121,41 @@ contract ERC20d {
         max = _maxSupply;
     }
     
+    function setIdentity(bytes32 _identity) public {
+        require(vActive[msg.sender]);
+        
+        bytes storage id = vID[msg.sender];
+        vStats[id]._delegationIdentity = _identity;
+    }    
+    
+    function increaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
+        vStats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
+        emit Trust(_id, POS);
+    }
+    
+    function decreaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
+        vStats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
+        emit Trust(_id, NEG);
+    }
+    
     function getvID(address _account) public view returns (bytes id) {
         id = vID[_account];
     }
     
-    function getvAddress(bytes _id) public view returns (address account) {
+    function getIdentity(bytes _id) public view returns (bytes32 identity) {
+        identity = vStats[_id]._delegationIdentity;
+    }
+    
+    function getAddress(bytes _id) public view returns (address account) {
         account = vAddress[_id];
     }
 
-    function totalValidations(bytes _id) public view returns (uint count) {
-        count = uint(vStats[_id]._totalValidations);
+    function trustLevel(bytes _id) public view returns (uint level) {
+        level = uint(vStats[_id]._trustLevel);
+    }
+
+    function totalEvents(bytes _id) public view returns (uint count) {
+        count = uint(vStats[_id]._totalEvents);
     }
     
     function totalVotes(bytes _id) public view returns (uint total) {
@@ -123,7 +174,7 @@ contract ERC20d {
         neutral = uint(vStats[_id]._neutralVotes);
     }    
     
-    function balanceOf(address _owner) public view returns (uint256) {
+    function balanceOf(address _owner) public view returns (uint) {
         return _balances[_owner];
     }
 
@@ -190,20 +241,20 @@ contract ERC20d {
         
         _delegate storage x = vStats[_id];
         if(_choice == POS) { 
-            x._positiveVotes = bytes32(uint(x._positiveVotes).add(_weight)); 
-        } else if(_choice == NEG) { 
-            x._negativeVotes = bytes32(uint(x._negativeVotes).add(_weight)); 
+            x._positiveVotes = bytes32(positiveVotes(_id).add(_weight)); 
         } else if(_choice == NEU) {
-            x._negativeVotes = bytes32(uint(x._neutralVotes).add(_weight)); 
+            x._neutralVotes = bytes32(neutralVotes(_id).add(_weight)); 
+        } else if(_choice == NEG) { 
+            x._negativeVotes = bytes32(negativeVotes(_id).add(_weight)); 
         }
-        x._totalValidations = bytes32(uint(x._totalValidations).add(1));
-        x._totalVotes = bytes32(uint(x._totalVotes).add(_weight)); 
+        x._totalVotes = bytes32(totalVotes(_id).add(_weight)); 
+        x._totalEvents = bytes32(totalEvents(_id).add(1));
         delegationReward(_id, _reward);
     }
 
-    function ValidatingIdentifier(address _account) internal view returns (bytes id) {
+    function delegationIdentifier(address _account) internal view returns (bytes id) {
         bytes memory stamp = bytesStamp(block.timestamp);
-        bytes32 prefix = 0x56616c6964697479;
+        bytes32 prefix = 0x56616c6964697479; 
         bytes32 x = bytes32(_account);
         id = new bytes(32);
         for(uint v = 0; v < id.length; v++){
@@ -218,30 +269,34 @@ contract ERC20d {
             }
         }
     }
-    
+
     function bytesStamp(uint _x) internal pure returns (bytes b) {
         b = new bytes(32);
         assembly { 
             mstore(add(b, 32), _x) 
         }
     }
-
-    function delegationReward(bytes _id, uint _reward) internal {
-       _mint(vAddress[_id], _reward);
-       emit Reward(_id, _reward);
-    }
     
     function createvID(address _account) internal {
-         bytes memory id = ValidatingIdentifier(_account);
+         bytes memory id = delegationIdentifier(_account);
          vActive[_account] = true;
          vAddress[id] = _account; 
          vID[_account] = id;
     }
+
+    function delegationReward(bytes _id, uint _reward) private {
+       _mint(vAddress[_id], _reward);
+       emit Reward(_id, _reward);
+    }
     
     event Approval(address indexed owner, address indexed spender, uint value);
     
-    event Transfer(address indexed from, address indexed to, uint  value);
+    event Transfer(address indexed from, address indexed to, uint value);
+    
+    event Neo(address indexed subject, bytes vID, uint block);
     
     event Reward(bytes vID, uint reward);
+    
+    event Trust(bytes vID, bytes32 flux);
 
-}
+    }
