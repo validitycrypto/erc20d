@@ -3,6 +3,14 @@ Records voting informatics for negative, postive, and total particpation count o
 
 The VLDY token is ERC20 compliant and all transaction functions are that of a standard token but where the features extend to functions of delegation, so the token type is denoted as ERC20d. 
 
+### Potential use cases
+
+* Standardised decentralised delegation
+* Communal perspectives
+* Decentralised Jury
+* Peer production
+* Data Integrity
+
 ### Parameters of communal votes are categorised into three options
 
 All are encoded to base16 (Hex)
@@ -53,4 +61,4 @@ Each votee has a unique delegation data structure that stores insight regarding 
 * A parameter to measure the delegates total event count
 
 ***Trust Level*** 
-* A mandatory parameter that delegates are allocated to measure their total delegation commitment and accuracy of results, which may impact their voting weight.
+* A mandatory parameter that delegates are allocated to measure their total delegation commitment and accuracy of results, which may impact their voting weight. 
