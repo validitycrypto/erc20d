@@ -33,9 +33,16 @@ With addition of a internal parameter of `_maxSupply` allows for the supply to b
 Each votee has a unique delegation data structure that stores insight regarding a users identity , decision, commitment and accuracy. The following information is stored and is publically accessible to any user upon retrieval of a delegation identifier. 
 
 * Delegation Identity
+  * A custom parameter that delegates can set themselves to add personal preference to their delegation identitifer. 
 * Positive Votes
+  * A mandatory parameter that delegates are allocated to measure their total positive vote count. 
 * Negative Votes
+  * A mandatory parameter that delegates are allocated to measure their total negatitive vote count. 
 * Neutral Votes
+  * A mandatory parameter that delegates are allocated to measure their total neutral vote count. 
 * Total Votes
+  * A mandatory parameter that delegates are allocated to measure their total vote count (NEG + NEU + POS)
 * Total Events
+  * A mandatory parameter that delegates are allocated to measure their total event count
 * Trust Level
+  * A mandatory parameter that delegates are allocated to measure their total delegation commitment and accuracy of results.
