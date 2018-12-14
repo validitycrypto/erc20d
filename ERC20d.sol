@@ -39,8 +39,8 @@ contract ERC20d {
     using SafeMath for uint;
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
-    bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
+    bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
 
     struct _delegate {
         bytes32 _delegationIdentity;
@@ -90,8 +90,8 @@ contract ERC20d {
 
     modifier _trustLimit(bytes _id) { 
         if(vTrust[_id] < block.number) {
-            vTrust[_id] = block.number.add(100);
-        } else if(block.number < vTrust[_id]) {
+            vTrust[_id] = block.number.add(1000);
+        } else {
             revert();
         }
         _; 
