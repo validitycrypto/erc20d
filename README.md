@@ -5,11 +5,11 @@ The VLDY token is ERC20 compliant and all transaction functions are that of a st
 
 ### Potential use cases
 
-* Standardised decentralised delegation
+* Decentralised delegation
 * Communal perspectives
-* Decentralised Jury
+* Decentralised jury
 * Peer production
-* Data Integrity
+* Data integrity
 
 ### Parameters of communal votes are categorised into three options
 
