@@ -13,14 +13,16 @@ The VLDY token is ERC20 compliant and all transaction functions are that of a st
 
 That is automaticallly generated when they recieve a ERC20d balance for the first time. The id allows access to the delegates voting statistics, credibility and identity. The hexdecimal id is contains a prefix for the asset, the block timestamp and the users calling account.
 
-code(Address: 0x267D19a33E10B7E42596096b7C0a3856872E21e1 -> 
+```
+Address: 0x267D19a33E10B7E42596096b7C0a3856872E21e1 -> 
 vID: 0x56616c69646974795c06b51c267d19a33e10b7e42596096b7c0a3856872e21e1
 
 Address: 0x39b494927F510AD5758907b959048454eC9b0976 -> 
 vID:0x56616c69646974795c06b4d139b494927f510ad5758907b959048454ec9b0976
 
 Address: 0xE40EB743300EE880736F47c266187aD63c77EF74 ->
-vID: 0x56616c69646974795c06b34be40eb743300ee880736f47c266187ad63c77ef74)
+vID: 0x56616c69646974795c06b34be40eb743300ee880736f47c266187ad63c77ef74
+```
 
 #### Minting supply implementation for delegation rewards
 
