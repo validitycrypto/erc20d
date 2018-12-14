@@ -237,7 +237,7 @@ contract ERC20d {
     }
 
     function delegationEvent(bytes _id, uint _weight, bytes32 _choice, uint _reward) _onlyAdmin public {   
-        require(_choice != bytes32(0x0));
+        require(_choice == POS || _choice == NEU || _choice == NEG);
         
         _delegate storage x = vStats[_id];
         if(_choice == POS) { 
