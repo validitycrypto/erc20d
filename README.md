@@ -37,7 +37,7 @@ vID: 0x56616c69646974795c06b34be40eb743300ee880736f47c266187ad63c77ef74
 
 ### Token locking/staking implementation to prevent Sybil attacks
 
-An private keymap structure is introduced to reduce the level of abnormal activity and delegation exploitation, the users are the ones that have to stake/lock their own tokens in order to commit to a delegation event and recieve an award for doing so once concluded. 
+An private keymap structure `_stake` is introduced in order to reduce levels of abnormal activity and delegation exploitation, the users stake/lock their own tokens by calling the `initaiteStake()` function before commiting to a delegation event.
 
 ### Minting supply implementation for delegation rewards
 
