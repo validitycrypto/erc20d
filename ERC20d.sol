@@ -120,6 +120,13 @@ contract ERC20d {
         _stake[msg.sender] = true;
         emit Stake(msg.sender);
     }
+
+    function setIdentity(bytes32 _identity) public {
+        require(_active[msg.sender]);
+        
+        bytes storage id = _vID[msg.sender];
+        _stats[id]._delegationIdentity = _identity;
+    }  
     
     function adminControl(address _entity) public _onlyFounder { 
         admin = _entity; 
@@ -132,22 +139,9 @@ contract ERC20d {
     function maxSupply() public view returns (uint max) {
         max = _maxSupply;
     }
-    
-    function setIdentity(bytes32 _identity) public {
-        require(_active[msg.sender]);
-        
-        bytes storage id = _vID[msg.sender];
-        _stats[id]._delegationIdentity = _identity;
-    }    
-    
-    function increaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
-        _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
-        emit Trust(_id, POS);
-    }
-    
-    function decreaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
-        _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
-        emit Trust(_id, NEG);
+
+    function balanceOf(address _owner) public view returns (uint) {
+        return _balances[_owner];
     }
     
     function getvID(address _account) public view returns (bytes id) {
@@ -190,14 +184,10 @@ contract ERC20d {
         neutral = uint(_stats[_id]._neutralVotes);
     }    
     
-    function balanceOf(address _owner) public view returns (uint) {
-        return _balances[_owner];
-    }
-
-    function allowance(address _owner, address _spender) public view returns (uint256) {
+    function allowance(address _owner, address _spender) public view returns (uint) {
         return _allowed[_owner][_spender];
     }
-
+    
     function transfer(address _to, uint _value) public returns (bool) {
         _transfer(msg.sender, _to, _value);
         return true;
@@ -210,6 +200,15 @@ contract ERC20d {
         _allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
         return true;
+    }
+    
+    function _mint(address _account, uint _value) _verifyID(_account) internal {
+        require(_totalSupply.add(_value) <= _maxSupply);
+        require(_account != address(0x0));
+
+        _totalSupply = _totalSupply.add(_value);
+        _balances[_account] = _balances[_account].add(_value);
+        emit Transfer(address(0x0), _account, _value);
     }
 
     function transferFrom(address _from, address _to, uint _value) public returns (bool) {
@@ -242,17 +241,16 @@ contract ERC20d {
         _balances[_to] = _balances[_to].add(_value);
         emit Transfer(_from, _to, _value);
     }
+    
+    function delegationReward(bytes _id, address _account, uint _reward) public _onlyAdmin {
+        require(isStaking(_account));
 
-    function _mint(address _account, uint _value) _verifyID(_account) internal {
-        require(_totalSupply.add(_value) <= _maxSupply);
-        require(_account != address(0x0));
-
-        _totalSupply = _totalSupply.add(_value);
-        _balances[_account] = _balances[_account].add(_value);
-        emit Transfer(address(0x0), _account, _value);
+        _stake[_account] = false;
+        _mint(_account, _reward);
+        emit Reward(_id, _reward);
     }
 
-    function delegationEvent(bytes _id, bytes32 _choice, uint _weight) _onlyAdmin public {   
+    function delegationEvent(bytes _id, bytes32 _choice, uint _weight) public _onlyAdmin {   
         require(_choice == POS || _choice == NEU || _choice == NEG);
         
         _stake[_wallet[_id]] = true;
@@ -285,7 +283,17 @@ contract ERC20d {
             }
         }
     }
-
+    
+    function increaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
+        _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
+        emit Trust(_id, POS);
+    }
+    
+    function decreaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
+        _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
+        emit Trust(_id, NEG);
+    }
+    
     function bytesStamp(uint _x) internal pure returns (bytes b) {
         b = new bytes(32);
         assembly { 
@@ -301,14 +309,6 @@ contract ERC20d {
          _vID[_account] = id;
     }
 
-    function delegationReward(bytes _id, address _account, uint _reward) public _onlyAdmin {
-        require(isStaking(_account));
-
-        _stake[_account] = false;
-        _mint(_account, _reward);
-        emit Reward(_id, _reward);
-    }
-
     event Approval(address indexed owner, address indexed spender, uint value);
     
     event Transfer(address indexed from, address indexed to, uint value);
@@ -321,4 +321,4 @@ contract ERC20d {
     
     event Stake(address indexed staker);
 
-    }
+}
