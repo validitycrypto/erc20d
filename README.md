@@ -35,6 +35,10 @@ Address: 0xE40EB743300EE880736F47c266187aD63c77EF74 ->
 vID: 0x56616c69646974795c06b34be40eb743300ee880736f47c266187ad63c77ef74
 ```
 
+### Token locking/staking implementation to prevent Sybil attacks
+
+An private keymap structure is introduced to reduce the level of abnormal activity and delegation exploitation, the users are the ones that have to stake/lock their own tokens in order to commit to participate in a delegation event and recieve a award for doing so. 
+
 ### Minting supply implementation for delegation rewards
 
 With the addition of an internal parameter of `_maxSupply` allows for the supply to be limited in an appropriate manner, still baring an essence of central control but yet yields a limit to potential misuse. The admin control features should be given full control to the verified delegation contract and not any other entity. In order to experience this digital commodity to full of its capabilities. 
