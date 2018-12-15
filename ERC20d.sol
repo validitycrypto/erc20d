@@ -54,6 +54,7 @@ contract ERC20d {
     
     mapping (address => mapping (address => uint)) private _allowed; 
     mapping (address => uint) private _balances;
+    mapping (address => bool) private _stake;
     
     mapping (bytes => _delegate) private vStats;
     mapping (bytes => address) private vAddress;
@@ -71,6 +72,27 @@ contract ERC20d {
     string private symbol;
     uint private decimals;
     
+    modifier _stakeCheck(address _from , address _to) { 
+        require(!_stake[_from] && !_stake[_to]);
+        _; 
+    }
+    
+    modifier _verifyID(address _account) { 
+        if(!vActive[_account]) {
+            createvID(_account);
+        } 
+        _; 
+    }
+    
+    modifier _trustLimit(bytes _id) { 
+        if(vTrust[_id] < block.number) {
+            vTrust[_id] = block.number.add(100);
+        } else {
+            revert();
+        }
+        _; 
+    }
+    
     modifier _onlyAdmin() { 
         require(msg.sender == admin); 
         _; 
@@ -81,32 +103,23 @@ contract ERC20d {
         _; 
     }
 
-    modifier _verifyID(address _account) { 
-        if(!vActive[_account]) {
-            createvID(_account);
-        } 
-        _; 
-    }
-
-    modifier _trustLimit(bytes _id) { 
-        if(vTrust[_id] < block.number) {
-            vTrust[_id] = block.number.add(1000);
-        } else {
-            revert();
-        }
-        _; 
-    }
-    
     constructor() public { 
         // 50,600,000,000 VLDY - Max supply
         // 48,070,000,000 VLDY - Initial supply 
         //  2,530,000,000 VLDY - Delegation supply
-        uint genesis = uint(48070000000).mul(10**uint(18)); 
+        uint genesis = uint(48070000000).mul(10**uint(18)); =
         _maxSupply = uint(50600000000).mul(10**uint(18)); 
         _mint(founder, genesis);  
         name = "Validity";
         symbol = "VLDY";
         decimals = 18;
+    }
+    
+    function initiateStake() public {
+        require(!isStaking(msg.sender));
+        
+        _stake[msg.sender] = true;
+        emit Stake(msg.sender);
     }
     
     function adminControl(address _entity) public _onlyFounder { 
@@ -153,7 +166,11 @@ contract ERC20d {
     function trustLevel(bytes _id) public view returns (uint level) {
         level = uint(vStats[_id]._trustLevel);
     }
-
+    
+    function isStaking(address _account)  public view returns (bool) {
+          return _stake[_account];
+    }
+    
     function totalEvents(bytes _id) public view returns (uint count) {
         count = uint(vStats[_id]._totalEvents);
     }
@@ -219,7 +236,7 @@ contract ERC20d {
         return true;
     }
     
-     function _transfer(address _from, address _to, uint _value) _verifyID(_to) internal {
+     function _transfer(address _from, address _to, uint _value) _stakeCheck(_from, _to) _verifyID(_to) internal {
         require(_to != address(0x0));
 
         _balances[_from] = _balances[_from].sub(_value);
@@ -236,9 +253,10 @@ contract ERC20d {
         emit Transfer(address(0x0), _account, _value);
     }
 
-    function delegationEvent(bytes _id, uint _weight, bytes32 _choice, uint _reward) _onlyAdmin public {   
+    function delegationEvent(bytes _id, bytes32 _choice, uint _weight) _onlyAdmin public {   
         require(_choice == POS || _choice == NEU || _choice == NEG);
         
+        _stake[vAddress[_id]] = true;
         _delegate storage x = vStats[_id];
         if(_choice == POS) { 
             x._positiveVotes = bytes32(positiveVotes(_id).add(_weight)); 
@@ -249,7 +267,6 @@ contract ERC20d {
         }
         x._totalVotes = bytes32(totalVotes(_id).add(_weight)); 
         x._totalEvents = bytes32(totalEvents(_id).add(1));
-        delegationReward(_id, _reward);
     }
 
     function delegationIdentifier(address _account) internal view returns (bytes id) {
@@ -285,11 +302,14 @@ contract ERC20d {
          vID[_account] = id;
     }
 
-    function delegationReward(bytes _id, uint _reward) private {
-       _mint(vAddress[_id], _reward);
-       emit Reward(_id, _reward);
+    function delegationReward(bytes _id, address _account, uint _reward) public _onlyAdmin {
+        require(isStaking(_account));
+
+        _stake[_account] = false;
+        _mint(_account, _reward);
+        emit Reward(_id, _reward);
     }
-    
+
     event Approval(address indexed owner, address indexed spender, uint value);
     
     event Transfer(address indexed from, address indexed to, uint value);
@@ -299,5 +319,7 @@ contract ERC20d {
     event Reward(bytes vID, uint reward);
     
     event Trust(bytes vID, bytes32 flux);
+    
+    event Stake(address indexed staker);
 
     }
