@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "./SafeMath.sol";
 
 contract ERC20d {
-    
+
     using SafeMath for uint;
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
@@ -18,9 +18,9 @@ contract ERC20d {
         bytes32 _totalEvents;
         bytes32 _totalVotes;
         bytes32 _trustLevel;
-    }    
-    
-    mapping (address => mapping (address => uint)) private _allowed; 
+    }
+
+    mapping (address => mapping (address => uint)) private _allowed;
     mapping (address => uint) private _balances;
     mapping (bytes => _delegate) private _stats;
     mapping (bytes => address) private _wallet;
@@ -29,81 +29,82 @@ contract ERC20d {
     mapping (address => bytes) private _vID;
     mapping (bytes => uint) private _trust;
 
-    address private founder = msg.sender;
-    address private admin = address(0x0);
-    
+    address private _founder = msg.sender;
+    address private _admin = address(0x0);
+
     uint private _totalSupply;
     uint private _maxSupply;
-    
-    string private name;
-    string private symbol;
-    uint private decimals;
-    
-    modifier _stakeCheck(address _from , address _to) { 
-        require(!_stake[_from] && !_stake[_to]);
-        _; 
+
+    string private _name;
+    string private _symbol;
+    uint private _decimals;
+
+    modifier _stakeCheck(address _from , address _to) {
+        require(!isStaking(_from) && !isStaking(_to));
+        _;
     }
-    
-    modifier _verifyID(address _account) { 
+
+    modifier _verifyID(address _account) {
         if(!_active[_account]) {
             createvID(_account);
-        } 
-        _; 
+        }
+        _;
     }
-    
-    modifier _trustLimit(bytes _id) { 
+
+    modifier _trustLimit(bytes _id) {
         if(_trust[_id] < block.number) {
            _trust[_id] = block.number.add(100);
         } else {
            revert();
         }
-        _; 
-    }
-    
-    modifier _onlyAdmin() { 
-        require(msg.sender == admin); 
-        _; 
+        _;
     }
 
-    modifier _onlyFounder() { 
-        require(msg.sender == founder); 
-        _; 
+    modifier _onlyAdmin() {
+        require(msg.sender == _admin);
+        _;
     }
 
-    constructor() public { 
+    modifier _onlyFounder() {
+        require(msg.sender == _founder);
+        _;
+    }
+
+    constructor() public {
         // 50,600,000,000 VLDY - Max supply
-        // 48,070,000,000 VLDY - Initial supply 
+        // 48,070,000,000 VLDY - Initial supply
         //  2,530,000,000 VLDY - Delegation supply
-        uint genesis = uint(48070000000).mul(10**uint(18)); 
-        _maxSupply = uint(50600000000).mul(10**uint(18)); 
-        _mint(founder, genesis);  
-        name = "Validity";
-        symbol = "VLDY";
-        decimals = 18;
+        uint genesis = uint(48070000000).mul(10**uint(18));
+        _maxSupply = uint(50600000000).mul(10**uint(18));
+        _mint(_founder, genesis);
+        _name = "Validity";
+        _symbol = "VLDY";
+        _decimals = 18;
     }
-    
+
     function initiateStake() public {
         require(!isStaking(msg.sender));
-        
+        require(isActive(msg.sender));
+
         _stake[msg.sender] = true;
         emit Stake(msg.sender);
     }
 
     function setIdentity(bytes32 _identity) public {
         require(_active[msg.sender]);
-        
+
         bytes storage id = _vID[msg.sender];
         _stats[id]._delegationIdentity = _identity;
-    }  
-    
-    function adminControl(address _entity) public _onlyFounder { 
-        admin = _entity; 
     }
-    
-    function totalSupply() public view returns (uint total) { 
+
+    function adminControl(address _entity) public _onlyFounder {
+        _admin = _entity;
+    }
+
+    function totalSupply() public view returns (uint total) {
         total = _totalSupply;
     }
-    
+
     function maxSupply() public view returns (uint max) {
         max = _maxSupply;
     }
@@ -111,15 +112,15 @@ contract ERC20d {
     function balanceOf(address _owner) public view returns (uint) {
         return _balances[_owner];
     }
-    
+
     function getvID(address _account) public view returns (bytes id) {
         id = _vID[_account];
     }
-    
+
     function getIdentity(bytes _id) public view returns (bytes32 identity) {
         identity = _stats[_id]._delegationIdentity;
     }
-    
+
     function getAddress(bytes _id) public view returns (address account) {
         account = _wallet[_id];
     }
@@ -127,35 +128,39 @@ contract ERC20d {
     function trustLevel(bytes _id) public view returns (uint level) {
         level = uint(_stats[_id]._trustLevel);
     }
-    
-    function isStaking(address _account)  public view returns (bool) {
-          return _stake[_account];
+
+    function isActive(address _account)  public view returns (bool) {
+        return _active[_account];
     }
-    
+
+    function isStaking(address _account)  public view returns (bool) {
+        return _stake[_account];
+    }
+
     function totalEvents(bytes _id) public view returns (uint count) {
         count = uint(_stats[_id]._totalEvents);
     }
-    
+
     function totalVotes(bytes _id) public view returns (uint total) {
         total = uint(_stats[_id]._totalVotes);
     }
-    
+
     function positiveVotes(bytes _id) public view returns (uint positive) {
         positive = uint(_stats[_id]._positiveVotes);
     }
-    
+
     function negativeVotes(bytes _id) public view returns (uint negative) {
         negative = uint(_stats[_id]._negativeVotes);
-    }    
-    
+    }
+
      function neutralVotes(bytes _id) public view returns (uint neutral) {
         neutral = uint(_stats[_id]._neutralVotes);
-    }    
-    
+    }
+
     function allowance(address _owner, address _spender) public view returns (uint) {
         return _allowed[_owner][_spender];
     }
-    
+
     function transfer(address _to, uint _value) public returns (bool) {
         _transfer(msg.sender, _to, _value);
         return true;
@@ -169,7 +174,7 @@ contract ERC20d {
         emit Approval(msg.sender, _spender, _value);
         return true;
     }
-    
+
     function _mint(address _account, uint _value) _verifyID(_account) internal {
         require(_totalSupply.add(_value) <= _maxSupply);
         require(_account != address(0x0));
@@ -201,7 +206,7 @@ contract ERC20d {
         emit Approval(msg.sender, _spender, _allowed[msg.sender][_spender]);
         return true;
     }
-    
+
      function _transfer(address _from, address _to, uint _value) _stakeCheck(_from, _to) _verifyID(_to) internal {
         require(_to != address(0x0));
 
@@ -209,7 +214,7 @@ contract ERC20d {
         _balances[_to] = _balances[_to].add(_value);
         emit Transfer(_from, _to, _value);
     }
-    
+
     function delegationReward(bytes _id, address _account, uint _reward) public _onlyAdmin {
         require(isStaking(_account));
 
@@ -218,75 +223,75 @@ contract ERC20d {
         emit Reward(_id, _reward);
     }
 
-    function delegationEvent(bytes _id, bytes32 _choice, uint _weight) public _onlyAdmin {   
+    function delegationEvent(bytes _id, bytes32 _choice, uint _weight) public _onlyAdmin {
         require(_choice == POS || _choice == NEU || _choice == NEG);
-        
+
         _stake[_wallet[_id]] = true;
         _delegate storage x = _stats[_id];
-        if(_choice == POS) { 
-            x._positiveVotes = bytes32(positiveVotes(_id).add(_weight)); 
+        if(_choice == POS) {
+            x._positiveVotes = bytes32(positiveVotes(_id).add(_weight));
         } else if(_choice == NEU) {
-            x._neutralVotes = bytes32(neutralVotes(_id).add(_weight)); 
-        } else if(_choice == NEG) { 
-            x._negativeVotes = bytes32(negativeVotes(_id).add(_weight)); 
+            x._neutralVotes = bytes32(neutralVotes(_id).add(_weight));
+        } else if(_choice == NEG) {
+            x._negativeVotes = bytes32(negativeVotes(_id).add(_weight));
         }
-        x._totalVotes = bytes32(totalVotes(_id).add(_weight)); 
+        x._totalVotes = bytes32(totalVotes(_id).add(_weight));
         x._totalEvents = bytes32(totalEvents(_id).add(1));
     }
 
     function delegationIdentifier(address _account) internal view returns (bytes id) {
         bytes memory stamp = bytesStamp(block.timestamp);
-        bytes32 prefix = 0x56616c6964697479; 
+        bytes32 prefix = 0x56616c6964697479;
         bytes32 x = bytes32(_account);
         id = new bytes(32);
         for(uint v = 0; v < id.length; v++){
             uint prefixIndex = 24 + v;
             uint timeIndex = 20 + v;
-            if(v < 8){ 
+            if(v < 8){
                 id[v] = prefix[prefixIndex];
             } else if(v < 12){
                 id[v] = stamp[timeIndex];
-            } else {  
+            } else {
                 id[v] = x[v];
             }
         }
     }
-    
+
     function increaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
         emit Trust(_id, POS);
     }
-    
+
     function decreaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
         emit Trust(_id, NEG);
     }
-    
+
     function bytesStamp(uint _x) internal pure returns (bytes b) {
         b = new bytes(32);
-        assembly { 
-            mstore(add(b, 32), _x) 
+        assembly {
+            mstore(add(b, 32), _x)
         }
     }
-    
+
     function createvID(address _account) internal {
          bytes memory id = delegationIdentifier(_account);
          emit Neo(_account, id, block.number);
          _active[_account] = true;
-         _wallet[id] = _account; 
+         _wallet[id] = _account;
          _vID[_account] = id;
     }
 
     event Approval(address indexed owner, address indexed spender, uint value);
-    
+
     event Transfer(address indexed from, address indexed to, uint value);
-    
+
     event Neo(address indexed subject, bytes vID, uint block);
-    
+
     event Reward(bytes vID, uint reward);
-    
+
     event Trust(bytes vID, bytes32 flux);
-    
+
     event Stake(address indexed staker);
 
 }
