@@ -89,14 +89,25 @@ contract ERC20d {
     function setIdentity(bytes32 _identity) public {
         require(_active[msg.sender]);
 
-        bytes storage id = _vID[msg.sender];
-        _stats[id]._delegationIdentity = _identity;
+        _stats[getvID(msg.sender)]._delegationIdentity = _identity;
     }
 
     function adminControl(address _entity) public _onlyFounder {
         _admin = _entity;
     }
-
+    
+    function name() public view returns (string token) {
+        token = _name;
+    }
+    
+    function symbol() public view returns (string total) {
+        sym = _symbol;
+    }
+    
+    function decimals() public view returns (uint floating) {
+        floating = _decimals;
+    }
+    
     function totalSupply() public view returns (uint total) {
         total = _totalSupply;
     }
@@ -219,10 +230,9 @@ contract ERC20d {
         emit Reward(_id, _reward);
     }
 
-    function delegationEvent(bytes _id, bytes32 _choice, uint _weight) public _onlyAdmin {
+    function delegationEvent(bytes _id, bytes32 _subject, bytes32 _choice, uint _weight) public _onlyAdmin {
         require(_choice == POS || _choice == NEU || _choice == NEG);
 
-        _stake[_wallet[_id]] = true;
         _delegate storage x = _stats[_id];
         if(_choice == POS) {
             x._positiveVotes = bytes32(positiveVotes(_id).add(_weight));
@@ -233,6 +243,7 @@ contract ERC20d {
         }
         x._totalVotes = bytes32(totalVotes(_id).add(_weight));
         x._totalEvents = bytes32(totalEvents(_id).add(1));
+        emit Vote(_id, _subject, _choice, _weight);
     }
 
     function delegationIdentifier(address _account) internal view returns (bytes id) {
@@ -255,13 +266,13 @@ contract ERC20d {
 
     function increaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
-        _trust[_id] = block.number.add(1000);
+        _trust[_id] = block.number.add(100);
         emit Trust(_id, POS);
     }
 
     function decreaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
-        _trust[_id] = block.number.add(1000);
+        _trust[_id] = block.number.add(100);
         emit Trust(_id, NEG);
     }
 
@@ -283,6 +294,8 @@ contract ERC20d {
     event Approval(address indexed owner, address indexed spender, uint value);
 
     event Transfer(address indexed from, address indexed to, uint value);
+
+    event Vote(bytes vID, bytes32 subject, bytes32 choice, uint weight);
 
     event Neo(address indexed subject, bytes vID, uint block);
 
