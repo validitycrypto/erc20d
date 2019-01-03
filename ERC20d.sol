@@ -78,21 +78,20 @@ contract ERC20d {
         _decimals = 18;
     }
 
-    function initiateStake() public {
-        require(!isStaking(msg.sender));
+    function toggleStake() public {
         require(isActive(msg.sender));
 
-        _stake[msg.sender] = true;
+        _stake[msg.sender] = !_stake[msg.sender];
         emit Stake(msg.sender);
     }
 
     function setIdentity(bytes32 _identity) public {
-        require(_active[msg.sender]);
+        require(isActive(msg.sender));
 
         _stats[getvID(msg.sender)]._delegationIdentity = _identity;
     }
 
-    function adminControl(address _entity) public _onlyFounder {
+    function adminControl(address _entity) _onlyFounder public {
         _admin = _entity;
     }
 
@@ -210,7 +209,7 @@ contract ERC20d {
         emit Transfer(_from, _to, _value);
     }
 
-    function delegationReward(bytes _id, address _account, uint _reward) public _onlyAdmin {
+    function delegationReward(bytes _id, address _account, uint _reward) _onlyAdmin public {
         require(isStaking(_account));
 
         _stake[_account] = false;
@@ -218,7 +217,7 @@ contract ERC20d {
         emit Reward(_id, _reward);
     }
 
-    function delegationEvent(bytes _id, bytes32 _subject, bytes32 _choice, uint _weight) public _onlyAdmin {
+    function delegationEvent(bytes _id, bytes32 _subject, bytes32 _choice, uint _weight) _onlyAdmin public {
         require(_choice == POS || _choice == NEU || _choice == NEG);
 
         _delegate storage x = _stats[_id];
