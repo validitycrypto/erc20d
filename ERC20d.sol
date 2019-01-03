@@ -28,6 +28,7 @@ contract ERC20d {
     mapping (address => bool) private _stake;
     mapping (address => bytes) private _vID;
     mapping (bytes => uint) private _trust;
+    mapping (bytes => bool) private _voted;
 
     address private _founder = msg.sender;
     address private _admin = address(0x0);
@@ -79,10 +80,10 @@ contract ERC20d {
     }
 
     function toggleStake() public {
-        require(!isStaking(msg.sender));
+        require(!isVoted(getvID(msg.sender)));
         require(isActive(msg.sender));
 
-        _stake[msg.sender] = true;
+        _stake[msg.sender] = !_stake[msg.sender];
         emit Stake(msg.sender);
     }
 
@@ -96,32 +97,36 @@ contract ERC20d {
         _admin = _entity;
     }
 
-    function totalSupply() public view returns (uint total) {
-        total = _totalSupply;
+    function totalSupply() public view returns (uint) {
+        return _totalSupply;
     }
 
-    function maxSupply() public view returns (uint max) {
-        max = _maxSupply;
+    function maxSupply() public view returns (uint) {
+        return _maxSupply;
     }
 
     function balanceOf(address _owner) public view returns (uint) {
         return _balances[_owner];
     }
 
-    function getvID(address _account) public view returns (bytes id) {
-        id = _vID[_account];
+    function getvID(address _account) public view returns (bytes) {
+        return _vID[_account];
     }
 
-    function getIdentity(bytes _id) public view returns (bytes32 identity) {
-        identity = _stats[_id]._delegationIdentity;
+    function getIdentity(bytes _id) public view returns (bytes32) {
+         return _stats[_id]._delegationIdentity;
     }
 
-    function getAddress(bytes _id) public view returns (address account) {
-        account = _wallet[_id];
+    function getAddress(bytes _id) public view returns (address) {
+        return _wallet[_id];
     }
 
-    function trustLevel(bytes _id) public view returns (uint level) {
-        level = uint(_stats[_id]._trustLevel);
+    function trustLevel(bytes _id) public view returns (uint) {
+        return uint(_stats[_id]._trustLevel);
+    }
+
+    function isVoted(bytes _id)  public view returns (bool) {
+        return _voted[_id];
     }
 
     function isActive(address _account)  public view returns (bool) {
@@ -132,24 +137,24 @@ contract ERC20d {
         return _stake[_account];
     }
 
-    function totalEvents(bytes _id) public view returns (uint count) {
-        count = uint(_stats[_id]._totalEvents);
+    function totalEvents(bytes _id) public view returns (uint) {
+        return uint(_stats[_id]._totalEvents);
     }
 
-    function totalVotes(bytes _id) public view returns (uint total) {
-        total = uint(_stats[_id]._totalVotes);
+    function totalVotes(bytes _id) public view returns (uint) {
+        return uint(_stats[_id]._totalVotes);
     }
 
-    function positiveVotes(bytes _id) public view returns (uint positive) {
-        positive = uint(_stats[_id]._positiveVotes);
+    function positiveVotes(bytes _id) public view returns (uint) {
+        return uint(_stats[_id]._positiveVotes);
     }
 
-    function negativeVotes(bytes _id) public view returns (uint negative) {
-        negative = uint(_stats[_id]._negativeVotes);
+    function negativeVotes(bytes _id) public view returns (uint) {
+        return uint(_stats[_id]._negativeVotes);
     }
 
-     function neutralVotes(bytes _id) public view returns (uint neutral) {
-        neutral = uint(_stats[_id]._neutralVotes);
+     function neutralVotes(bytes _id) public view returns (uint) {
+        return uint(_stats[_id]._neutralVotes);
     }
 
     function allowance(address _owner, address _spender) public view returns (uint) {
@@ -212,7 +217,9 @@ contract ERC20d {
 
     function delegationReward(bytes _id, address _account, uint _reward) _onlyAdmin public {
         require(isStaking(_account));
+        require(isVoted(_id));
 
+        _voted[_id] = false;
         _stake[_account] = false;
         _mint(_account, _reward);
         emit Reward(_id, _reward);
@@ -220,6 +227,8 @@ contract ERC20d {
 
     function delegationEvent(bytes _id, bytes32 _subject, bytes32 _choice, uint _weight) _onlyAdmin public {
         require(_choice == POS || _choice == NEU || _choice == NEG);
+        require(isStaking(getAddress(_id)));
+        require(!isVoted(_id));
 
         _delegate storage x = _stats[_id];
         if(_choice == POS) {
@@ -232,13 +241,14 @@ contract ERC20d {
         x._totalVotes = bytes32(totalVotes(_id).add(_weight));
         x._totalEvents = bytes32(totalEvents(_id).add(1));
         emit Vote(_id, _subject, _choice, _weight);
+        _voted[_id] = true;
     }
 
-    function delegationIdentifier(address _account) internal view returns (bytes id) {
+    function delegationIdentifier(address _account) internal view returns (bytes) {
         bytes memory stamp = bytesStamp(block.timestamp);
         bytes32 prefix = 0x56616c6964697479;
+        bytes memory id = new bytes(32);
         bytes32 x = bytes32(_account);
-        id = new bytes(32);
         for(uint v = 0; v < id.length; v++){
             uint prefixIndex = 24 + v;
             uint timeIndex = 20 + v;
@@ -250,6 +260,7 @@ contract ERC20d {
                 id[v] = x[v];
             }
         }
+       return id;
     }
 
     function increaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
