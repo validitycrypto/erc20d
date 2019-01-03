@@ -7,7 +7,7 @@ contract ERC20d {
     using SafeMath for uint;
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
-    bytes32 constant NEU = 0x6e65757472616c00000000000000000000000000000000000000000000000000;
+    bytes32 constant NEU = 0x4e65757472616c00000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
 
     struct _delegate {
@@ -95,19 +95,7 @@ contract ERC20d {
     function adminControl(address _entity) public _onlyFounder {
         _admin = _entity;
     }
-    
-    function name() public view returns (string token) {
-        token = _name;
-    }
-    
-    function symbol() public view returns (string total) {
-        sym = _symbol;
-    }
-    
-    function decimals() public view returns (uint floating) {
-        floating = _decimals;
-    }
-    
+
     function totalSupply() public view returns (uint total) {
         total = _totalSupply;
     }
