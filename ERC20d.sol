@@ -79,9 +79,10 @@ contract ERC20d {
     }
 
     function toggleStake() public {
+        require(!isStaking(msg.sender));
         require(isActive(msg.sender));
 
-        _stake[msg.sender] = !_stake[msg.sender];
+        _stake[msg.sender] = true;
         emit Stake(msg.sender);
     }
 
