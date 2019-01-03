@@ -45,7 +45,7 @@ contract ERC20d {
     }
 
     modifier _verifyID(address _account) {
-        if(!isActive(_account) {
+        if(!isActive(_account)) {
             createvID(_account);
         }
         _;
