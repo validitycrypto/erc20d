@@ -93,6 +93,14 @@ contract ERC20d {
         _stats[getvID(msg.sender)]._delegationIdentity = _identity;
     }
     
+    function name() public view returns (string) {
+        return _name;
+    }
+    
+    function symbol() public view returns (string) {
+        return _symbol;
+    }
+    
     function maxSupply() public view returns (uint) {
         return _maxSupply;
     }
