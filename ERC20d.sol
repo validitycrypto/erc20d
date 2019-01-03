@@ -253,13 +253,13 @@ contract ERC20d {
 
     function increaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
-        _trust[_id] = block.number.add(100);
+        _trust[_id] = block.number.add(1000);
         emit Trust(_id, POS);
     }
 
     function decreaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
-        _trust[_id] = block.number.add(100);
+        _trust[_id] = block.number.add(1000);
         emit Trust(_id, NEG);
     }
 
