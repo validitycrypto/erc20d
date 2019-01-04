@@ -86,33 +86,33 @@ contract ERC20d {
         _stake[msg.sender] = !_stake[msg.sender];
         emit Stake(msg.sender);
     }
-    
+
     function setIdentity(bytes32 _identity) public {
         require(isActive(msg.sender));
 
         _stats[getvID(msg.sender)]._delegationIdentity = _identity;
     }
-    
+
     function name() public view returns (string) {
         return _name;
     }
-    
+
     function symbol() public view returns (string) {
         return _symbol;
     }
-    
+
     function decimals() public view returns (uint) {
         return _decimals;
     }
-    
+
     function maxSupply() public view returns (uint) {
         return _maxSupply;
     }
-    
+
     function totalSupply() public view returns (uint) {
         return _totalSupply;
     }
-    
+
     function isVoted(bytes _id)  public view returns (bool) {
         return _voted[_id];
     }
@@ -164,7 +164,7 @@ contract ERC20d {
      function neutralVotes(bytes _id) public view returns (uint) {
         return uint(_stats[_id]._neutralVotes);
     }
-    
+
     function allowance(address _owner, address _spender) public view returns (uint) {
         return _allowed[_owner][_spender];
     }
@@ -173,7 +173,7 @@ contract ERC20d {
         _transfer(msg.sender, _to, _value);
         return true;
     }
-    
+
     function approve(address _spender, uint _value) public returns (bool) {
         require(_allowed[msg.sender][_spender] == uint(0));
         require(_spender != address(0x0));
@@ -238,6 +238,7 @@ contract ERC20d {
         require(isStaking(getAddress(_id)));
         require(!isVoted(_id));
 
+        _voted[_id] = true;
         _delegate storage x = _stats[_id];
         if(_choice == POS) {
             x._positiveVotes = bytes32(positiveVotes(_id).add(_weight));
@@ -249,7 +250,6 @@ contract ERC20d {
         x._totalVotes = bytes32(totalVotes(_id).add(_weight));
         x._totalEvents = bytes32(totalEvents(_id).add(1));
         emit Vote(_id, _subject, _choice, _weight);
-        _voted[_id] = true;
     }
 
     function delegationIdentifier(address _account) internal view returns (bytes) {
@@ -282,14 +282,14 @@ contract ERC20d {
         _trust[_id] = block.number.add(1000);
         emit Trust(_id, NEG);
     }
-    
+
     function bytesStamp(uint _x) internal pure returns (bytes b) {
         b = new bytes(32);
         assembly {
             mstore(add(b, 32), _x)
         }
     }
-    
+
     function adminControl(address _entity) _onlyFounder public {
         _admin = _entity;
     }
@@ -301,7 +301,7 @@ contract ERC20d {
          _wallet[id] = _account;
          _vID[_account] = id;
     }
-    
+
     event Approval(address indexed owner, address indexed spender, uint value);
 
     event Transfer(address indexed from, address indexed to, uint value);
