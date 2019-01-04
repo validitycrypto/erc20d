@@ -101,6 +101,10 @@ contract ERC20d {
         return _symbol;
     }
     
+    function decimals() public view returns (uint) {
+        return _decimals;
+    }
+    
     function maxSupply() public view returns (uint) {
         return _maxSupply;
     }
