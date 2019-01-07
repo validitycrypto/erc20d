@@ -22,6 +22,7 @@ contract ERC20d {
 
     mapping (address => mapping (address => uint)) private _allowed;
     mapping (address => uint) private _balances;
+
     mapping (bytes => _delegate) private _stats;
     mapping (bytes => address) private _wallet;
     mapping (address => bool) private _active;
@@ -35,10 +36,10 @@ contract ERC20d {
 
     uint private _totalSupply;
     uint private _maxSupply;
+    uint private _decimals;
 
     string private _name;
     string private _symbol;
-    uint private _decimals;
 
     modifier _stakeCheck(address _from , address _to) {
         require(!isStaking(_from) && !isStaking(_to));
