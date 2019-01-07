@@ -48,7 +48,7 @@ contract ERC20d {
 
     modifier _verifyID(address _account) {
         if(!isActive(_account)) {
-            createvID(_account);
+            createID(_account);
         }
         _;
     }
@@ -295,7 +295,7 @@ contract ERC20d {
         _admin = _entity;
     }
 
-    function createvID(address _account) internal {
+    function createID(address _account) internal {
          bytes memory id = delegationIdentifier(_account);
          emit Neo(_account, id, block.number);
          _active[_account] = true;
