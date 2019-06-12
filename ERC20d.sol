@@ -9,9 +9,9 @@ contract ERC20d {
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
     bytes32 constant NEU = 0x4e65757472616c00000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
-
+                           
     struct _delegate {
-        bytes32 _delegationIdentity;
+        bytes32 _delegateIdentity;
         bytes32 _positiveVotes;
         bytes32 _negativeVotes;
         bytes32 _neutralVotes;
@@ -89,7 +89,7 @@ contract ERC20d {
     function setIdentity(bytes32 _identity) public {
         require(isActive(msg.sender));
 
-        _stats[getvID(msg.sender)]._delegationIdentity = _identity;
+        _stats[getvID(msg.sender)]._delegateIdentity = _identity;
     }
 
     function name() public view returns (string memory) {
@@ -133,7 +133,7 @@ contract ERC20d {
     }
 
     function getIdentity(bytes32 _id) public view returns (bytes32) {
-         return _stats[_id]._delegationIdentity;
+         return _stats[_id]._delegateIdentity;
     }
 
     function getAddress(bytes32 _id) public view returns (address) {
@@ -251,12 +251,13 @@ contract ERC20d {
         emit Vote(_id, _subject, _choice, _weight);
     }
 
-    function valdiationGeneration(address _account) private view returns (bytes32 _id) {
-      bytes32 idPrefix = 0xffff000000000000000000000000000000000000000000000000000000000000;
-      assembly {
-        _id := or(_account, or(idPrefix, shl(0x40, and(number, 0xffff))))
-      }
-    }
+     function valdiationGeneration(address _account) private view returns (bytes32) {
+        bytes32 id = 0xffff000000000000000000000000000000000000000000000000000000000000;
+        assembly {
+            id := or(id, mul(or(_account, shl(0xa0, and(number, 0xffffffff))), 0x7dee20b84b88))
+        }
+        return id;
+     }
 
     function increaseTrust(bytes32 _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
@@ -269,7 +270,6 @@ contract ERC20d {
         _trust[_id] = block.number.add(1000);
         emit Trust(_id, NEG);
     }
-
 
     function adminControl(address _entity) _onlyFounder public {
         _admin = _entity;
