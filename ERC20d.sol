@@ -251,10 +251,11 @@ contract ERC20d {
         emit Vote(_id, _subject, _choice, _weight);
     }
 
-     function valdiationGeneration(address _account) private view returns (bytes32) {
-        bytes32 id = 0xffff000000000000000000000000000000000000000000000000000000000000;
+    function valdiationGeneration(address _account) private view returns (bytes32) {
+        bytes32 id = 0xffcc000000000000000000000000000000000000000000000000000000000000;
         assembly {
-            id := or(id, mul(or(_account, shl(0xa0, and(number, 0xffffffff))), 0x7dee20b84b88))
+            let product := mul(or(_account, shl(0xa0, and(number, 0xffffffff))), 0x7dee20b84b88) // mul by keccak("ValidityID")[0, 6] to create bijective mapping
+            id := or(id, xor(product, shl(0x78, and(product, 0xffffffffffffffffffffffffffffff))))
         }
         return id;
      }
