@@ -1,83 +1,6 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.8;
 
-library SafeMath {
-    
-    int256 constant private INT256_MIN = -2**255;
-
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-
-        if (a == 0) {
-            return 0;
-        }
-
-        uint256 c = a * b;
-        require(c / a == b);
-
-        return c;
-    }
-
-    function mul(int256 a, int256 b) internal pure returns (int256) {
-        if (a == 0) {
-            return 0;
-        }
-
-        require(!(a == -1 && b == INT256_MIN)); 
-
-        int256 c = a * b;
-        require(c / a == b);
-
-        return c;
-    }
-
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b > 0);
-        uint256 c = a / b;
-
-        return c;
-    }
-
-    function div(int256 a, int256 b) internal pure returns (int256) {
-        require(b != 0); 
-        require(!(b == -1 && a == INT256_MIN)); 
-
-        int256 c = a / b;
-
-        return c;
-    }
-
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b <= a);
-        uint256 c = a - b;
-
-        return c;
-    }
-
-    function sub(int256 a, int256 b) internal pure returns (int256) {
-        int256 c = a - b;
-        require((b >= 0 && c <= a) || (b < 0 && c > a));
-
-        return c;
-    }
-
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        require(c >= a);
-
-        return c;
-    }
-
-    function add(int256 a, int256 b) internal pure returns (int256) {
-        int256 c = a + b;
-        require((b >= 0 && c >= a) || (b < 0 && c < a));
-
-        return c;
-    }
-
-    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b != 0);
-        return a % b;
-    }
-}
+import "./SafeMath.sol";
 
 contract ERC20d {
 
@@ -100,13 +23,13 @@ contract ERC20d {
     mapping (address => mapping (address => uint)) private _allowed;
     mapping (address => uint) private _balances;
 
-    mapping (bytes => _delegate) private _stats;
-    mapping (bytes => address) private _wallet;
+    mapping (bytes32 => _delegate) private _stats;
+    mapping (bytes32 => address) private _wallet;
     mapping (address => bool) private _active;
     mapping (address => bool) private _stake;
-    mapping (address => bytes) private _vID;
-    mapping (bytes => uint) private _trust;
-    mapping (bytes => bool) private _voted;
+    mapping (address => bytes32) private _vID;
+    mapping (bytes32 => uint) private _trust;
+    mapping (bytes32 => bool) private _voted;
 
     address private _founder = msg.sender;
     address private _admin = address(0x0);
@@ -124,13 +47,11 @@ contract ERC20d {
     }
 
     modifier _verifyID(address _account) {
-        if(!isActive(_account)) {
-            createID(_account);
-        }
+        if(!isActive(_account)) createID(_account);
         _;
     }
 
-    modifier _trustLimit(bytes _id) {
+    modifier _trustLimit(bytes32 _id) {
         require(_trust[_id] < block.number);
         _;
     }
@@ -171,11 +92,11 @@ contract ERC20d {
         _stats[getvID(msg.sender)]._delegationIdentity = _identity;
     }
 
-    function name() public view returns (string) {
+    function name() public view returns (string memory) {
         return _name;
     }
 
-    function symbol() public view returns (string) {
+    function symbol() public view returns (string memory) {
         return _symbol;
     }
 
@@ -191,7 +112,7 @@ contract ERC20d {
         return _totalSupply;
     }
 
-    function isVoted(bytes _id)  public view returns (bool) {
+    function isVoted(bytes32 _id)  public view returns (bool) {
         return _voted[_id];
     }
 
@@ -207,39 +128,39 @@ contract ERC20d {
         return _balances[_owner];
     }
 
-    function getvID(address _account) public view returns (bytes) {
+    function getvID(address _account) public view returns (bytes32) {
         return _vID[_account];
     }
 
-    function getIdentity(bytes _id) public view returns (bytes32) {
+    function getIdentity(bytes32 _id) public view returns (bytes32) {
          return _stats[_id]._delegationIdentity;
     }
 
-    function getAddress(bytes _id) public view returns (address) {
+    function getAddress(bytes32 _id) public view returns (address) {
         return _wallet[_id];
     }
 
-    function trustLevel(bytes _id) public view returns (uint) {
+    function trustLevel(bytes32 _id) public view returns (uint) {
         return uint(_stats[_id]._trustLevel);
     }
 
-    function totalEvents(bytes _id) public view returns (uint) {
+    function totalEvents(bytes32 _id) public view returns (uint) {
         return uint(_stats[_id]._totalEvents);
     }
 
-    function totalVotes(bytes _id) public view returns (uint) {
+    function totalVotes(bytes32 _id) public view returns (uint) {
         return uint(_stats[_id]._totalVotes);
     }
 
-    function positiveVotes(bytes _id) public view returns (uint) {
+    function positiveVotes(bytes32 _id) public view returns (uint) {
         return uint(_stats[_id]._positiveVotes);
     }
 
-    function negativeVotes(bytes _id) public view returns (uint) {
+    function negativeVotes(bytes32 _id) public view returns (uint) {
         return uint(_stats[_id]._negativeVotes);
     }
 
-     function neutralVotes(bytes _id) public view returns (uint) {
+     function neutralVotes(bytes32 _id) public view returns (uint) {
         return uint(_stats[_id]._neutralVotes);
     }
 
@@ -261,7 +182,7 @@ contract ERC20d {
         return true;
     }
 
-    function _mint(address _account, uint _value) _verifyID(_account) internal {
+    function _mint(address _account, uint _value) _verifyID(_account) private {
         require(_totalSupply.add(_value) <= _maxSupply);
         require(_account != address(0x0));
 
@@ -301,7 +222,7 @@ contract ERC20d {
         emit Transfer(_from, _to, _value);
     }
 
-    function delegationReward(bytes _id, address _account, uint _reward) _onlyAdmin public {
+    function delegationReward(bytes32 _id, address _account, uint _reward) _onlyAdmin public {
         require(isStaking(_account));
         require(isVoted(_id));
 
@@ -311,7 +232,7 @@ contract ERC20d {
         emit Reward(_id, _reward);
     }
 
-    function delegationEvent(bytes _id, bytes32 _subject, bytes32 _choice, uint _weight) _onlyAdmin public {
+    function delegationEvent(bytes32 _id, bytes32 _subject, bytes32 _choice, uint _weight) _onlyAdmin public {
         require(_choice == POS || _choice == NEU || _choice == NEG);
         require(isStaking(getAddress(_id)));
         require(!isVoted(_id));
@@ -330,50 +251,32 @@ contract ERC20d {
         emit Vote(_id, _subject, _choice, _weight);
     }
 
-    function delegationIdentifier(address _account) internal view returns (bytes) {
-        bytes memory stamp = bytesStamp(block.timestamp);
-        bytes32 prefix = 0x56616c6964697479;
-        bytes memory id = new bytes(32);
-        bytes32 x = bytes32(_account);
-        for(uint v = 0; v < id.length; v++){
-            uint prefixIndex = 24 + v;
-            uint timeIndex = 20 + v;
-            if(v < 8){
-                id[v] = prefix[prefixIndex];
-            } else if(v < 12){
-                id[v] = stamp[timeIndex];
-            } else {
-                id[v] = x[v];
-            }
-        }
-       return id;
+    function valdiationGeneration(address _account) private view returns (bytes32 _id) {
+      bytes32 idPrefix = 0xffff000000000000000000000000000000000000000000000000000000000000;
+      assembly {
+        _id := or(_account, or(idPrefix, shl(0x40, and(number, 0xffff))))
+      }
     }
 
-    function increaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
+    function increaseTrust(bytes32 _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
         _trust[_id] = block.number.add(1000);
         emit Trust(_id, POS);
     }
 
-    function decreaseTrust(bytes _id) _trustLimit(_id) _onlyAdmin public {
+    function decreaseTrust(bytes32 _id) _trustLimit(_id) _onlyAdmin public {
         _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
         _trust[_id] = block.number.add(1000);
         emit Trust(_id, NEG);
     }
 
-    function bytesStamp(uint _x) internal pure returns (bytes b) {
-        b = new bytes(32);
-        assembly {
-            mstore(add(b, 32), _x)
-        }
-    }
 
     function adminControl(address _entity) _onlyFounder public {
         _admin = _entity;
     }
 
     function createID(address _account) internal {
-         bytes memory id = delegationIdentifier(_account);
+         bytes32 id = valdiationGeneration(_account);
          emit Neo(_account, id, block.number);
          _active[_account] = true;
          _wallet[id] = _account;
@@ -384,13 +287,13 @@ contract ERC20d {
 
     event Transfer(address indexed from, address indexed to, uint value);
 
-    event Vote(bytes vID, bytes32 subject, bytes32 choice, uint weight);
+    event Vote(bytes32 vID, bytes32 subject, bytes32 choice, uint weight);
 
-    event Neo(address indexed subject, bytes vID, uint block);
+    event Neo(address indexed subject, bytes32 vID, uint block);
 
-    event Reward(bytes vID, uint reward);
+    event Reward(bytes32 vID, uint reward);
 
-    event Trust(bytes vID, bytes32 flux);
+    event Trust(bytes32 vID, bytes32 flux);
 
     event Stake(address indexed staker);
 
