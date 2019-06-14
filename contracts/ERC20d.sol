@@ -46,7 +46,7 @@ contract ERC20d {
         _;
     }
 
-    modifier _verifyID(address _account) {
+    modifier _verifyId(address _account) {
         if(!isActive(_account)) createID(_account);
         _;
     }
@@ -79,7 +79,7 @@ contract ERC20d {
     }
 
     function toggleStake() public {
-        require(!isVoted(getvID(msg.sender)));
+        require(!isVoted(validityId(msg.sender)));
         require(isActive(msg.sender));
 
         _stake[msg.sender] = !_stake[msg.sender];
@@ -89,7 +89,7 @@ contract ERC20d {
     function setIdentity(bytes32 _identity) public {
         require(isActive(msg.sender));
 
-        _stats[getvID(msg.sender)]._delegateIdentity = _identity;
+        _stats[validityId(msg.sender)]._delegateIdentity = _identity;
     }
 
     function name() public view returns (string memory) {
@@ -128,7 +128,7 @@ contract ERC20d {
         return _balances[_owner];
     }
 
-    function getvID(address _account) public view returns (bytes32) {
+    function validityId(address _account) public view returns (bytes32) {
         return _vID[_account];
     }
 
@@ -182,7 +182,7 @@ contract ERC20d {
         return true;
     }
 
-    function _mint(address _account, uint _value) _verifyID(_account) private {
+    function _mint(address _account, uint _value) _verifyId(_account) private {
         require(_totalSupply.add(_value) <= _maxSupply);
         require(_account != address(0x0));
 
@@ -214,7 +214,7 @@ contract ERC20d {
         return true;
     }
 
-     function _transfer(address _from, address _to, uint _value) _stakeCheck(_from, _to) _verifyID(_to) internal {
+     function _transfer(address _from, address _to, uint _value) _stakeCheck(_from, _to) _verifyId(_to) internal {
         require(_to != address(0x0));
 
         _balances[_from] = _balances[_from].sub(_value);
