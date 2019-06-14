@@ -1,0 +1,25 @@
+{
+  "name": "erc20d",
+  "version": "1.0.0",
+  "description": "Records voting informatics for negative, positive, and total participation count of every registered voter.",
+  "main": "/tests/erc20d.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/validitycrypto/erc20d.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/validitycrypto/erc20d/issues"
+  },
+  "homepage": "https://github.com/validitycrypto/erc20d#readme",
+  "dependencies": {
+    "web3-utils": "^1.0.0-beta.55"
+  }
+}
