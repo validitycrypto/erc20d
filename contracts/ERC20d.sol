@@ -52,7 +52,7 @@ contract ERC20d {
     }
 
     modifier _trustLimit(bytes32 _id) {
-        require(_trust[_id] < block.number);
+        require(_trust[_id] <= block.number);
         _;
     }
 
@@ -267,7 +267,7 @@ contract ERC20d {
     }
 
     function decreaseTrust(bytes32 _id) _trustLimit(_id) _onlyAdmin public {
-        _stats[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
+        _stats[_id]._trustLevel = bytes32(trustLevel(_id).sub(1));
         _trust[_id] = block.number.add(1000);
         emit Trust(_id, NEG);
     }

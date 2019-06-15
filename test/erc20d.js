@@ -27,6 +27,16 @@ function checkSum(_address){
   return web3.utils.toChecksumAddress(_address)
 }
 
+async function timeTravel(){
+  for(var x = 0 ; x < 1000 ; x++){
+    await web3.currentProvider.send({
+      jsonrpc: '2.0',
+      method: 'evm_mine',
+      params: 0
+    }, () => {});
+  }
+}
+
 contract("ERC20d", async accounts => {
 
   it("Genesis ::: constructor()", () =>
@@ -384,6 +394,17 @@ contract("ERC20d", async accounts => {
               );
          })
     );
+    it("Delegation ::: trustLevel() ::: INCREASE", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+             var genesisId = await _instance.validityId.call(accounts[0]);
+             var currentTrust = await _instance.trustLevel.call(genesisId);
+
+              assert.equal(convertHex(currentTrust), 1,
+                  "Failure in updating trust level"
+                );
+            })
+    );
     it("Delegation ::: _trustLimit()", () =>
          ERC20d.deployed()
            .then(async _instance => {
@@ -398,7 +419,23 @@ contract("ERC20d", async accounts => {
                 assert.equal(convertHex(postAttack), convertHex(preAttack),
                   "Failure in trust time constraints"
                 );
-            }
+              }
+
+              await timeTravel();
          })
+    );
+    it("Delegation ::: trustLevel() ::: DECREASE", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+             var genesisId = await _instance.validityId.call(accounts[0]);
+
+             await _instance.decreaseTrust(genesisId, { from: accounts[0] });
+
+             var currentTrust = await _instance.trustLevel.call(genesisId);
+
+              assert.equal(convertHex(currentTrust), 0,
+                  "Failure in decreasing trust level"
+                );
+            })
     );
 })
