@@ -27,6 +27,20 @@ function checkSum(_address){
   return web3.utils.toChecksumAddress(_address)
 }
 
+async function shortAddress(){
+  await web3.eth.accounts.wallet.clear();
+  var newAccount = await web3.eth.accounts.wallet.create(1)
+  var startIndex = newAccount[0].address.length-2;
+  var endIndex = newAccount[0].address.length+1;
+  var shortAddress = JSON.stringify(newAccount[0].address).substring(startIndex, endIndex);
+  while (shortAddress != "000"){
+    await web3.eth.accounts.wallet.remove(newAccount);
+    newAccount = await web3.eth.accounts.wallet.create(1);
+    shortAddress = JSON.stringify(newAccount[0].address).substring(startIndex, endIndex);
+  }
+  return newAccount[0];
+}
+
 async function timeTravel(){
   for(var x = 0 ; x < 1000 ; x++){
     await web3.currentProvider.send({
@@ -288,7 +302,7 @@ contract("ERC20d", async accounts => {
               await _instance.decreaseAllowance(accounts[1], oneVote, {from: accounts[0] });
             })
       );
-      it("Transactional ::: transferFrom()", () =>
+      it("Transactional ::: transferFrom() ::: NORM", () =>
            ERC20d.deployed()
              .then(async _instance => {
                var preBalance = await _instance.balanceOf.call(accounts[0]);
@@ -312,6 +326,24 @@ contract("ERC20d", async accounts => {
                  );
                }
              })
+      );
+      it("Transactional ::: transferFrom() ::: SHORT ", () =>
+           ERC20d.deployed()
+             .then(async _instance => {
+                  var adversaryAddress = await shortAddress();
+                  var preAttack = await _instance.balanceOf.call(adversaryAddress.address);
+                  var rawSignature = await _instance.contract.methods.transfer(
+                    checkSum(adversaryAddress.address), convertHex(oneVote)).encodeABI();
+                  await web3.eth.sendTransaction({
+                    from: accounts[0],
+                    to: _instance.address,
+                    data: rawSignature,
+                    gas: 5750000,
+                  });
+                  var postAttack = await _instance.balanceOf.call(adversaryAddress.address);
+                  assert.equal(subtractValues(oneVote, postAttack), 0,
+                  "Short address vulnerability");
+              })
       );
       it("Delegation ::: delegationEvent()", () =>
            ERC20d.deployed()
@@ -374,6 +406,17 @@ contract("ERC20d", async accounts => {
               var preBalance = await _instance.balanceOf(accounts[1]);
 
               await _instance.delegationReward(subjectId, accounts[1], oneVote, { from: accounts[0] });
+
+              try {
+                var preAttack = await _instance.balanceOf(accounts[1]);
+                await _instance.delegationReward(subjectId, accounts[1], oneVote, { from: accounts[0] });
+              } catch(error){
+                var postAttack = await _instance.balanceOf(accounts[1]);
+
+                assert.equal(convertHex(postAttack), convertHex(preAttack),
+                  "Double spend failure for validation rewards"
+                );
+              }
 
               var postBalance = await _instance.balanceOf(accounts[1]);
 
