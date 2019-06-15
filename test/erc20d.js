@@ -11,7 +11,7 @@ const genesisValue = 48070000000000000000000000000;
 const maxValue = 50600000000000000000000000000;
 
 function subtractValues(_a, _b) {
-  var valueDelta = web3.utils.toBN(_a).sub(web3.utils.toBN(_b));
+  var valueDelta = web3.utils.toBN(convertHex(_a)).sub(web3.utils.toBN(convertHex(_b)));
   return web3.utils.hexToNumberString(valueDelta);
 }
 
@@ -34,7 +34,7 @@ contract("ERC20d", async accounts => {
       .then(_instance => _instance.balanceOf.call(accounts[0]))
       .then(_balance => {
         assert.equal(_balance.valueOf(), genesisValue,
-          "Genesis transaction was not successfully transacted"
+          "Genesis transaction failure"
         );
      })
   );
@@ -79,15 +79,13 @@ contract("ERC20d", async accounts => {
        .then(_instance => _instance.maxSupply.call()
        .then(_supply => {
          assert.equal(convertHex(_supply), maxValue,
-           "Illogical mint affecting validation supply"
+           "Illogical maximum supply"
        );
     })
   ));
   it("Ownership ::: _onlyFounder()", () =>
        ERC20d.deployed()
          .then(async _instance => {
-           var genesisId = await _instance.validityId.call(accounts[0]);
-
            try {
              await _instance.adminControl(accounts[0], { from: accounts[1] });
            } catch(error) {}
@@ -102,8 +100,14 @@ contract("ERC20d", async accounts => {
            var genesisId = await _instance.validityId.call(accounts[0]);
 
            try {
+             var preAttack = await _instance.trustLevel.call(genesisId);
              await _instance.increaseTrust(genesisId, { from: accounts[1] });
-           } catch(error) {}
+           } catch(error) {
+             var postAttack = await _instance.trustLevel.call(genesisId);
+             assert.equal(convertHex(preAttack), convertHex(preAttack),
+               "Admin ownership failure by non-authorised user"
+             );
+           }
 
            await _instance.adminControl(accounts[1], { from: accounts[0] });
            await _instance.increaseTrust(genesisId, { from: accounts[1] });
@@ -135,7 +139,13 @@ contract("ERC20d", async accounts => {
 
          try {
            await _instance.setIdentity(subjectInput, { from: accounts[1] });
-         } catch(error) {}
+         } catch(error) {
+           subjectId = await _instance.validityId.call(accounts[1]);
+
+           assert.equal(subjectId, zeroId,
+             "Identity exploit w/ non-active validators"
+           );
+         }
 
          await _instance.setIdentity(subjectInput, { from: accounts[0] });
 
@@ -163,17 +173,19 @@ contract("ERC20d", async accounts => {
        ERC20d.deployed()
          .then(async _instance => {
             var oneVote = web3.utils.toBN(10000).mul(web3.utils.toBN(1e18));
-            var preBalance = convertHex(await _instance.balanceOf.call(accounts[0]));
+            var preBalance = await _instance.balanceOf.call(accounts[0]);
 
             await _instance.transfer(accounts[1], oneVote, {from: accounts[0]});
 
-            var postBalance = convertHex(await _instance.balanceOf.call(accounts[0]));
-            var recipentBalance = convertHex(await _instance.balanceOf.call(accounts[1]));
+            var postBalance = await _instance.balanceOf.call(accounts[0]);
 
             assert.equal(subtractValues(preBalance, postBalance), oneVote,
-              "Keymapping exploit"
+              "Balance keymapping exploit"
             );
-            assert.equal(recipentBalance, oneVote,
+
+            var recipentBalance = await _instance.balanceOf.call(accounts[1]);
+
+            assert.equal(convertHex(recipentBalance), oneVote,
               "Transfer was not successful"
             );
          })
@@ -181,7 +193,7 @@ contract("ERC20d", async accounts => {
    it("Transactional ::: isStaking()", () =>
         ERC20d.deployed()
           .then(async _instance => {
-             var preBalance = convertHex(await _instance.balanceOf.call(accounts[0]));
+             var preBalance = await _instance.balanceOf.call(accounts[0]);
 
              await _instance.toggleStake({ from: accounts[0] });
 
@@ -192,26 +204,74 @@ contract("ERC20d", async accounts => {
              );
 
              try {
+                var preAttack = await _instance.balanceOf.call(accounts[0]);
                 await _instance.transfer(accounts[1], oneVote, { from: accounts[0] });
-             } catch(error) {}
+             } catch(error) {
+               var postAttack = await _instance.balanceOf.call(accounts[0]);
 
-             var postBalance = convertHex(await _instance.balanceOf.call(accounts[0]));
+               assert.equal(convertHex(preAttack), convertHex(postAttack),
+                   "Staking transactional inhibition failure"
+               );
+             }
+
+             var postBalance = await _instance.balanceOf.call(accounts[0]);
 
              await _instance.toggleStake({ from: accounts[0] });
 
-             assert.equal(preBalance, postBalance,
+             assert.equal(convertHex(preBalance), convertHex(postBalance),
                "Transaction was successful whilst staking"
              );
           })
     );
+    it("Transactional ::: increaseAllowance()/decreaseAllowance()", () =>
+          ERC20d.deployed()
+            .then(async _instance => {
+              try{
+                var preAttack = await _instance.allowance.call(accounts[0], accounts[1]);
+
+                await _instance.increaseAllowance(accounts[1], -oneVote, {from: accounts[0] });
+              } catch(error){
+                var postAttack = await _instance.allowance.call(accounts[0], accounts[1]);
+
+                assert.equal(convertHex(preAttack), convertHex(postAttack),
+                    "Underflow failure within allowance mapping"
+                );
+              }
+
+              await _instance.increaseAllowance(accounts[1], oneVote, {from: accounts[0] });
+
+              var preAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
+
+              assert.equal(convertHex(preAllowance), oneVote,
+                "Allowance was not successfully updated"
+              );
+
+              await _instance.decreaseAllowance(accounts[1], oneVote, {from: accounts[0] });
+
+              var postAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
+
+              assert.equal(convertHex(postAllowance), 0,
+                "Allowance was not successfully updated"
+              );
+
+            })
+      );
     it("Transactional ::: approve()", () =>
           ERC20d.deployed()
             .then(async _instance => {
+
               await _instance.approve(accounts[1], oneVote, {from: accounts[0] });
 
               try {
+                var preAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
                 await _instance.approve(accounts[1], oneVote, {from: accounts[0] });
-              } catch(error) {}
+              } catch(error) {
+                var postAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
+
+                assert.equal(convertHex(preAllowance), convertHex(postAllowance),
+                  "Allowance limitation failure"
+                );
+              }
 
               await _instance.decreaseAllowance(accounts[1], oneVote, {from: accounts[0] });
               await _instance.approve(accounts[1], oneVote, {from: accounts[0] });
@@ -221,20 +281,26 @@ contract("ERC20d", async accounts => {
       it("Transactional ::: transferFrom()", () =>
            ERC20d.deployed()
              .then(async _instance => {
-               var preBalance = convertHex(await _instance.balanceOf.call(accounts[0]));
+               var preBalance = await _instance.balanceOf.call(accounts[0]);
 
                await _instance.approve(accounts[1], oneVote, {from: accounts[0] });
                await _instance.transferFrom(accounts[0], accounts[1], oneVote, { from: accounts[1] });
 
-               var postBalance = convertHex(await _instance.balanceOf.call(accounts[0]));
-
-               try {
-                 await _instance.transferFrom(accounts[0], accounts[1], oneVote, { from: accounts[1] });
-               } catch(error) {}
+               var postBalance = await _instance.balanceOf.call(accounts[0]);
 
                assert.equal(subtractValues(preBalance, postBalance), oneVote,
                  "Approval was not successful"
                );
+
+               try {
+                 await _instance.transferFrom(accounts[0], accounts[1], oneVote, { from: accounts[1] });
+               } catch(error) {
+                 var postAttack = convertHex(await _instance.balanceOf.call(accounts[0]));
+
+                 assert.equal(convertHex(postBalance), convertHex(postAttack),
+                   "Approval attack vector within allowance CEI"
+                 );
+               }
              })
       );
 })
