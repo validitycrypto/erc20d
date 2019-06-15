@@ -223,7 +223,7 @@ contract("ERC20d", async accounts => {
              );
           })
     );
-    it("Transactional ::: increaseAllowance()/decreaseAllowance()", () =>
+    it("Transactional ::: allowance()", () =>
           ERC20d.deployed()
             .then(async _instance => {
               try{
@@ -243,7 +243,7 @@ contract("ERC20d", async accounts => {
               var preAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
 
               assert.equal(convertHex(preAllowance), oneVote,
-                "Allowance was not successfully updated"
+                "Allowance was not successfully updated ::: ++"
               );
 
               await _instance.decreaseAllowance(accounts[1], oneVote, {from: accounts[0] });
@@ -251,7 +251,7 @@ contract("ERC20d", async accounts => {
               var postAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
 
               assert.equal(convertHex(postAllowance), 0,
-                "Allowance was not successfully updated"
+                "Allowance was not successfully updated ::: --"
               );
 
             })
@@ -303,4 +303,102 @@ contract("ERC20d", async accounts => {
                }
              })
       );
+      it("Delegation ::: delegationEvent()", () =>
+           ERC20d.deployed()
+             .then(async _instance => {
+                var subjectId = await _instance.validityId.call(accounts[1]);
+
+                await _instance.adminControl(accounts[0], { from: accounts[0] });
+                await _instance.toggleStake({ from: accounts[1] });
+                await _instance.delegationEvent(subjectId, zeroId, POS, oneVote, { from: accounts[0] });
+
+                var positiveVotes = await _instance.positiveVotes.call(subjectId);
+
+                assert.equal(convertHex(positiveVotes), oneVote,
+                  "Failure updating delegate option meta-data"
+                );
+
+                var neutralVotes = await _instance.neutralVotes.call(subjectId);
+
+                assert.equal(convertHex(neutralVotes), 0,
+                  "Failure indexing delegate option meta-data"
+                );
+
+                var negativeVotes = await _instance.negativeVotes.call(subjectId);
+
+                assert.equal(convertHex(negativeVotes), 0,
+                  "Failure indexing delegate option meta-data"
+                );
+
+                var totalVotes = await _instance.totalVotes.call(subjectId);
+
+                assert.equal(convertHex(totalVotes), oneVote,
+                  "Failure indexing delegate option meta-data"
+                );
+
+                var totalEvents = await _instance.totalEvents.call(subjectId);
+
+                assert.equal(convertHex(totalEvents), 1,
+                  "Failure indexing delegate option meta-data"
+                );
+
+           })
+    );
+    it("Delegation ::: isVoted() ::: PRE", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+              var subjectId = await _instance.validityId.call(accounts[1]);
+
+              var votingStatus = await _instance.isVoted.call(subjectId);
+
+              assert.equal(votingStatus, true,
+                "Failure setting voting status"
+              );
+         })
+    );
+    it("Delegation ::: delegationEvent()", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+              var subjectId = await _instance.validityId.call(accounts[1]);
+
+              var preBalance = await _instance.balanceOf(accounts[1]);
+
+              await _instance.delegationReward(subjectId, accounts[1], oneVote, { from: accounts[0] });
+
+              var postBalance = await _instance.balanceOf(accounts[1]);
+
+              assert.equal(subtractValues(postBalance, preBalance), oneVote,
+                "Failure minting delegation reward"
+              );
+         })
+    );
+    it("Delegation ::: isVoted() ::: POST", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+              var subjectId = await _instance.validityId.call(accounts[1]);
+
+              var votingStatus = await _instance.isVoted.call(subjectId);
+
+              assert.equal(votingStatus, false,
+                "Failure resetting voting status"
+              );
+         })
+    );
+    it("Delegation ::: _trustLimit()", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+             var genesisId = await _instance.validityId.call(accounts[0]);
+             var preAttack = await _instance.trustLevel.call(genesisId);
+
+              try {
+                await _instance.increaseTrust(genesisId, { from: accounts[1] });
+              } catch(error){
+                var postAttack = await _instance.trustLevel.call(genesisId);
+
+                assert.equal(convertHex(postAttack), convertHex(preAttack),
+                  "Failure in trust time constraints"
+                );
+            }
+         })
+    );
 })
