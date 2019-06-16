@@ -28,10 +28,18 @@ function checkSum(_address){
   return web3.utils.toChecksumAddress(_address)
 }
 
+function trimAddress(_address){
+  return _address.substring(2, _address.length+1)
+}
+
+function checkZero(_address){
+  return JSON.stringify(_address).substring(41, 43);
+}
+
 async function createRawTX(_accountObject, _target, _abi){
   var subjectAccount = _accountObject.address;
   var subjectKey = _accountObject.privateKey;
-  var privateKey = new Buffer(subjectKey.substring(2, subjectKey.length+1), 'hex')
+  var privateKey = new Buffer(trimAddress(subjectKey), 'hex')
   var metaData = { from: subjectAccount, to: _target, data: _abi, gas: 5750000 };
   var transactionObject = new Transaction(metaData);
   transactionObject.sign(privateKey);
@@ -42,13 +50,11 @@ async function createRawTX(_accountObject, _target, _abi){
 async function shortAddress(){
   await web3.eth.accounts.wallet.clear();
   var newAccount = await web3.eth.accounts.wallet.create(1)
-  var startIndex = newAccount[0].address.length-1;
-  var endIndex = newAccount[0].address.length+1;
-  var shortAddress = JSON.stringify(newAccount[0].address).substring(startIndex, endIndex);
+  var shortAddress = checkZero(newAccount[0].address);
   while (shortAddress != "00"){
     await web3.eth.accounts.wallet.clear();
     newAccount = await web3.eth.accounts.wallet.create(1);
-    shortAddress = JSON.stringify(newAccount[0].address).substring(startIndex, endIndex);
+    shortAddress = checkZero(newAccount[0].address);
   }
   return newAccount[0];
 }
@@ -494,6 +500,86 @@ contract("ERC20d", async accounts => {
               assert.equal(subtractValues(postBalance, preBalance), oneVote,
                 "Failure minting delegation reward"
               );
+         })
+    );
+    it("Delegation ::: delegationReward() ::: SHORT ", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+
+              var adversaryAddress = web3.eth.accounts.wallet[0].address;
+
+              var adversaryId = await _instance.validityId.call(adversaryAddress);
+
+              var preBalance = await _instance.balanceOf(adversaryAddress);
+
+              await _instance.delegationReward(adversaryId, adversaryAddress, oneVote, { from: accounts[0] });
+
+              try {
+                var preAttack = await _instance.balanceOf(adversaryAddress);
+
+                await _instance.delegationReward(adversaryId, adversaryAddress, oneVote, { from: accounts[0] });
+              } catch(error){
+                var postAttack = await _instance.balanceOf(adversaryAddress);
+
+                assert.equal(convertHex(postAttack), convertHex(preAttack),
+                  "Double spend failure for validation rewards"
+                );
+              }
+
+              var postBalance = await _instance.balanceOf(adversaryAddress);
+
+              assert.equal(subtractValues(postBalance, preBalance), oneVote,
+                "Failure minting delegation reward"
+              );
+         })
+    );
+    it("Delegation ::: delegationReward() ::: MAX ", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+             await _instance.transfer(accounts[2], convertHex(oneVote), { from: accounts[0] });
+             await _instance.transfer(accounts[3], convertHex(oneVote), { from: accounts[0] });
+             await web3.eth.sendTransaction({
+               value: 1000000000000000000,
+               to: accounts[2],
+               from: accounts[0]
+             });
+             await web3.eth.sendTransaction({
+               value: 1000000000000000000,
+               to: accounts[3],
+               from: accounts[0]
+             });
+
+             var subjectOne = await _instance.validityId.call(accounts[2]);
+             var subjectTwo = await _instance.validityId.call(accounts[3]);
+
+             var currentSupply = await _instance.totalSupply.call();
+             var maxSupply = await _instance.maxSupply.call();
+             var remainingSupply = subtractValues(maxSupply, currentSupply);
+
+             await _instance.toggleStake({ from: accounts[2] });
+             await _instance.toggleStake({ from: accounts[3] });
+
+             await _instance.delegationEvent(subjectOne, zeroId, POS, oneVote, { from: accounts[0] });
+             await _instance.delegationEvent(subjectTwo, zeroId, POS, oneVote, { from: accounts[0] });
+
+             await _instance.delegationReward(subjectOne, accounts[2], remainingSupply, { from: accounts[0] });
+
+             currentSupply = await _instance.totalSupply.call();
+
+             assert.equal(convertHex(currentSupply), maxSupply,
+               "Token minting supply limitation failure"
+              );
+
+            try {
+              var preBalance = await _instance.balanceOf.call(accounts[3])
+              await _instance.delegationReward(subjectTwo, accounts[3], remainingSupply, { from: accounts[0] });
+            } catch(error) {
+              var postBalance = await _instance.balanceOf.call(accounts[3])
+
+              assert.equal(subtractValues(preBalance, postBalance), 0,
+                "Overflow detected for token supply"
+              );
+            }
          })
     );
     it("Delegation ::: isVoted() ::: POST", () =>
