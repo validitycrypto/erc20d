@@ -1,4 +1,5 @@
 const { toValidityID, fromValidityID } = require('../utils/validity-id.js');
+const Transaction = require('ethereumjs-tx').Transaction;
 const ERC20d = artifacts.require("ERC20d");
 
 const POS = "0x506f736974697665000000000000000000000000000000000000000000000000";
@@ -27,14 +28,25 @@ function checkSum(_address){
   return web3.utils.toChecksumAddress(_address)
 }
 
+async function createRawTX(_accountObject, _target, _abi){
+  var subjectAccount = _accountObject.address;
+  var subjectKey = _accountObject.privateKey;
+  var privateKey = new Buffer(subjectKey.substring(2, subjectKey.length+1), 'hex')
+  var metaData = { from: subjectAccount, to: _target, data: _abi, gas: 5750000 };
+  var transactionObject = new Transaction(metaData);
+  transactionObject.sign(privateKey);
+  var serializedObject = transactionObject.serialize();
+  return serializedObject;
+}
+
 async function shortAddress(){
   await web3.eth.accounts.wallet.clear();
   var newAccount = await web3.eth.accounts.wallet.create(1)
-  var startIndex = newAccount[0].address.length-2;
+  var startIndex = newAccount[0].address.length-1;
   var endIndex = newAccount[0].address.length+1;
   var shortAddress = JSON.stringify(newAccount[0].address).substring(startIndex, endIndex);
-  while (shortAddress != "000"){
-    await web3.eth.accounts.wallet.remove(newAccount);
+  while (shortAddress != "00"){
+    await web3.eth.accounts.wallet.clear();
     newAccount = await web3.eth.accounts.wallet.create(1);
     shortAddress = JSON.stringify(newAccount[0].address).substring(startIndex, endIndex);
   }
@@ -345,7 +357,7 @@ contract("ERC20d", async accounts => {
                   "Short address vulnerability");
               })
       );
-      it("Delegation ::: delegationEvent()", () =>
+      it("Delegation ::: delegationEvent() ::: NORM", () =>
            ERC20d.deployed()
              .then(async _instance => {
                 var subjectId = await _instance.validityId.call(accounts[1]);
@@ -386,6 +398,65 @@ contract("ERC20d", async accounts => {
 
            })
     );
+    it("Delegation ::: delegationEvent() ::: SHORT", () =>
+         ERC20d.deployed()
+           .then(async _instance => {
+              var adversaryObject = web3.eth.accounts.wallet[0];
+
+              await web3.eth.sendTransaction({
+                value: 1000000000000000000,
+                to: adversaryObject.address,
+                from: accounts[0]
+              });
+
+              var stakeSignature = await _instance.contract.methods.toggleStake().encodeABI();
+              var adversaryRaw = await createRawTX(adversaryObject, _instance.address, stakeSignature);
+
+              await web3.eth.sendSignedTransaction('0x' + adversaryRaw.toString('hex'))
+
+              var adversaryId = await _instance.validityId.call(adversaryObject.address);
+              var rawSignature = await _instance.contract.methods.delegationEvent(adversaryId,
+                zeroId, POS, convertHex(oneVote)).encodeABI();
+
+              await web3.eth.sendTransaction({
+                from: accounts[0],
+                to: _instance.address,
+                data: rawSignature,
+                gas: 5750000,
+              });
+
+              var positiveVotes = await _instance.positiveVotes.call(adversaryId);
+
+              assert.equal(convertHex(positiveVotes), oneVote,
+                "Failure updating delegate option meta-data"
+              );
+
+              var neutralVotes = await _instance.neutralVotes.call(adversaryId);
+
+              assert.equal(convertHex(neutralVotes), 0,
+                "Failure indexing delegate option meta-data"
+              );
+
+              var negativeVotes = await _instance.negativeVotes.call(adversaryId);
+
+              assert.equal(convertHex(negativeVotes), 0,
+                "Failure indexing delegate option meta-data"
+              );
+
+              var totalVotes = await _instance.totalVotes.call(adversaryId);
+
+              assert.equal(convertHex(totalVotes), oneVote,
+                "Failure indexing delegate option meta-data"
+              );
+
+              var totalEvents = await _instance.totalEvents.call(adversaryId);
+
+              assert.equal(convertHex(totalEvents), 1,
+                "Failure indexing delegate option meta-data"
+              );
+
+         })
+  );
     it("Delegation ::: isVoted() ::: PRE", () =>
          ERC20d.deployed()
            .then(async _instance => {
@@ -398,7 +469,7 @@ contract("ERC20d", async accounts => {
               );
          })
     );
-    it("Delegation ::: delegationEvent()", () =>
+    it("Delegation ::: delegationReward() ::: NORM ", () =>
          ERC20d.deployed()
            .then(async _instance => {
               var subjectId = await _instance.validityId.call(accounts[1]);
