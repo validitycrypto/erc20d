@@ -186,8 +186,8 @@ contract ERC20d {
     }
 
     function transferFrom(address _from, address _to, uint _value) public returns (bool) {
+        _approve(_from, msg.sender, _allowed[_from][msg.sender].sub(_value));
         _transfer(_from, _to, _value);
-        decreaseAllowance(_to, _allowed[_from][msg.sender].sub(_value));
         return true;
     }
 
@@ -231,8 +231,8 @@ contract ERC20d {
         require(isStaking(_account));
         require(isVoted(_id));
 
-        validationData[_id]._votingStatus = false;
         validationUser[_account]._stakingStatus = false;
+        validationData[_id]._votingStatus = false;
         _mint(_account, _reward);
         emit Reward(_id, _reward);
     }
