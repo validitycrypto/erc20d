@@ -288,7 +288,7 @@ contract("ERC20d", async accounts => {
                 "Allowance was not successfully updated ::: ++"
               );
 
-              await _instance.decreaseAllowance(accounts[1], oneVote, {from: accounts[0] });
+              await _instance.decreaseAllowance(accounts[1], convertHex(oneVote), {from: accounts[0] });
 
               var postAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
 

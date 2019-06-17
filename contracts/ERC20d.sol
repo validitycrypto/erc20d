@@ -179,12 +179,43 @@ contract ERC20d {
     }
 
     function approve(address _spender, uint _value) public returns (bool) {
-        require(_allowed[msg.sender][_spender] == uint(0));
-        require(_spender != address(0x0));
+        require(_allowed[msg.sender][_spender] == 0);
 
-        _allowed[msg.sender][_spender] = _value;
-        emit Approval(msg.sender, _spender, _value);
+        _approve(msg.sender, _spender, _value);
         return true;
+    }
+
+    function transferFrom(address _from, address _to, uint _value) public returns (bool) {
+        _transfer(_from, _to, _value);
+        decreaseAllowance(_to, _allowed[_from][msg.sender].sub(_value));
+        return true;
+    }
+
+    function increaseAllowance(address _spender, uint _addedValue) public returns (bool) {
+        _approve(msg.sender, _spender, _allowed[msg.sender][_spender].add(_addedValue));
+        return true;
+    }
+
+    function decreaseAllowance(address _spender, uint _subtractedValue) public returns (bool) {
+        _approve(msg.sender, _spender, _allowed[msg.sender][_spender].sub(_subtractedValue));
+        return true;
+    }
+
+    function _transfer(address _from, address _to, uint _value) _stakeCheck(_from, _to) _verifyId(_to) internal {
+        require(_from != address(0x0));
+        require(_to != address(0x0));
+
+        _balances[_from] = _balances[_from].sub(_value);
+        _balances[_to] = _balances[_to].add(_value);
+        emit Transfer(_from, _to, _value);
+    }
+
+    function _approve(address _owner, address _spender, uint _value) internal {
+        require(_spender != address(0x0));
+        require(_owner != address(0x0));
+
+        _allowed[_owner][_spender] = _value;
+        emit Approval(_owner, _spender, _value);
     }
 
     function _mint(address _account, uint _value) _verifyId(_account) private {
@@ -194,37 +225,6 @@ contract ERC20d {
         _totalSupply = _totalSupply.add(_value);
         _balances[_account] = _balances[_account].add(_value);
         emit Transfer(address(0x0), _account, _value);
-    }
-
-    function transferFrom(address _from, address _to, uint _value) public returns (bool) {
-        _allowed[_from][msg.sender] = _allowed[_from][msg.sender].sub(_value);
-        _transfer(_from, _to, _value);
-        emit Approval(_from, msg.sender, _allowed[_from][msg.sender]);
-        return true;
-    }
-
-    function increaseAllowance(address _spender, uint _addedValue) public returns (bool) {
-        require(_spender != address(0x0));
-
-        _allowed[msg.sender][_spender] = _allowed[msg.sender][_spender].add(_addedValue);
-        emit Approval(msg.sender, _spender, _allowed[msg.sender][_spender]);
-        return true;
-    }
-
-    function decreaseAllowance(address _spender, uint _subtractedValue) public returns (bool) {
-        require(_spender != address(0x0));
-
-        _allowed[msg.sender][_spender] = _allowed[msg.sender][_spender].sub(_subtractedValue);
-        emit Approval(msg.sender, _spender, _allowed[msg.sender][_spender]);
-        return true;
-    }
-
-     function _transfer(address _from, address _to, uint _value) _stakeCheck(_from, _to) _verifyId(_to) internal {
-        require(_to != address(0x0));
-
-        _balances[_from] = _balances[_from].sub(_value);
-        _balances[_to] = _balances[_to].add(_value);
-        emit Transfer(_from, _to, _value);
     }
 
     function delegationReward(bytes32 _id, address _account, uint _reward) _onlyAdmin public {
@@ -262,7 +262,6 @@ contract ERC20d {
             let product := mul(or(_account, shl(0xa0, and(number, 0xffffffff))), 0x7dee20b84b88)
             id := or(id, xor(product, shl(0x78, and(product, 0xffffffffffffffffffffffffffffff))))
         }
-        emit Neo(_account, id, block.number);
         return id;
      }
 
@@ -278,11 +277,12 @@ contract ERC20d {
         emit Trust(_id, NEG);
     }
 
-    function conformIdentity(address _account) internal {
+    function conformIdentity(address _account) private {
          bytes32 neophyteDelegate = valdiationGeneration(_account);
          validationUser[_account]._validationIdentifier = neophyteDelegate;
          validationData[neophyteDelegate]._delegateAddress = _account;
          validationUser[_account]._validationStatus = true;
+         emit Neo(_account, neophyteDelegate, block.number);
     }
 
     function adminControl(address _entity) _onlyFounder public {
@@ -290,17 +290,11 @@ contract ERC20d {
     }
 
     event Approval(address indexed owner, address indexed spender, uint value);
-
     event Transfer(address indexed from, address indexed to, uint value);
-
     event Vote(bytes32 vID, bytes32 subject, bytes32 choice, uint weight);
-
     event Neo(address indexed subject, bytes32 vID, uint block);
-
     event Reward(bytes32 vID, uint reward);
-
     event Trust(bytes32 vID, bytes32 flux);
-
     event Stake(address indexed staker);
 
 }
