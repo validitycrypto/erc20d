@@ -10,26 +10,30 @@ contract ERC20d {
     bytes32 constant NEU = 0x4e65757472616c00000000000000000000000000000000000000000000000000;
     bytes32 constant NEG = 0x4e65676174697665000000000000000000000000000000000000000000000000;
 
+    struct userObject {
+        bytes32 _validationIdentifier;
+        bool _validationStatus;
+        bool _stakingStatus;
+    }
+
     struct delegateObject {
+        address _delegateAddress;
         bytes32 _delegateIdentity;
         bytes32 _positiveVotes;
         bytes32 _negativeVotes;
         bytes32 _neutralVotes;
         bytes32 _totalEvents;
         bytes32 _totalVotes;
+        bytes32 _trustLimit;
         bytes32 _trustLevel;
+        bool _votingStatus;
     }
 
     mapping (address => mapping (address => uint)) private _allowed;
     mapping (address => uint) private _balances;
 
     mapping (bytes32 => delegateObject) private validationData;
-    mapping (address => bytes32) private validityIdentifier;
-    mapping (bytes32 => address) private validationAddress;
-    mapping (address => bool) private validationStatus;
-    mapping (address => bool) private stakingStatus;
-    mapping (bytes32 => uint) private trustLog;
-    mapping (bytes32 => bool) private voteLog;
+    mapping (address => userObject) private validationUser;
 
     address private _founder = msg.sender;
     address private _admin = address(0x0);
@@ -41,18 +45,18 @@ contract ERC20d {
     string private _name;
     string private _symbol;
 
+    modifier _trustLimit(bytes32 _id) {
+        require(uint(validationData[_id]._trustLimit) <= block.number);
+        _;
+    }
+
     modifier _stakeCheck(address _from , address _to) {
         require(!isStaking(_from) && !isStaking(_to));
         _;
     }
 
     modifier _verifyId(address _account) {
-        if(!isActive(_account)) createID(_account);
-        _;
-    }
-
-    modifier _trustLimit(bytes32 _id) {
-        require(trustLog[_id] <= block.number);
+        if(!isActive(_account)) conformIdentity(_account);
         _;
     }
 
@@ -82,7 +86,8 @@ contract ERC20d {
         require(!isVoted(validityId(msg.sender)));
         require(isActive(msg.sender));
 
-        stakingStatus[msg.sender] = !stakingStatus[msg.sender];
+        bool currentState = validationUser[msg.sender]._stakingStatus;
+        validationUser[msg.sender]._stakingStatus = !currentState;
         emit Stake(msg.sender);
     }
 
@@ -113,15 +118,15 @@ contract ERC20d {
     }
 
     function isVoted(bytes32 _id)  public view returns (bool) {
-        return voteLog[_id];
+        return validationData[_id]._votingStatus;
     }
 
     function isActive(address _account)  public view returns (bool) {
-        return validationStatus[_account];
+        return validationUser[_account]._validationStatus;
     }
 
     function isStaking(address _account)  public view returns (bool) {
-        return stakingStatus[_account];
+        return validationUser[_account]._stakingStatus;
     }
 
     function balanceOf(address _owner) public view returns (uint) {
@@ -129,7 +134,7 @@ contract ERC20d {
     }
 
     function validityId(address _account) public view returns (bytes32) {
-        return validityIdentifier[_account];
+        return validationUser[_account]._validationIdentifier;
     }
 
     function getIdentity(bytes32 _id) public view returns (bytes32) {
@@ -137,7 +142,7 @@ contract ERC20d {
     }
 
     function getAddress(bytes32 _id) public view returns (address) {
-        return validationAddress[_id];
+        return validationData[_id]._delegateAddress;
     }
 
     function trustLevel(bytes32 _id) public view returns (uint) {
@@ -226,8 +231,8 @@ contract ERC20d {
         require(isStaking(_account));
         require(isVoted(_id));
 
-        voteLog[_id] = false;
-        stakingStatus[_account] = false;
+        validationData[_id]._votingStatus = false;
+        validationUser[_account]._stakingStatus = false;
         _mint(_account, _reward);
         emit Reward(_id, _reward);
     }
@@ -237,7 +242,7 @@ contract ERC20d {
         require(isStaking(getAddress(_id)));
         require(!isVoted(_id));
 
-        voteLog[_id] = true;
+        validationData[_id]._votingStatus = true;
         delegateObject storage x = validationData[_id];
         if(_choice == POS) {
             x._positiveVotes = bytes32(positiveVotes(_id).add(_weight));
@@ -251,37 +256,37 @@ contract ERC20d {
         emit Vote(_id, _subject, _choice, _weight);
     }
 
-    function valdiationGeneration(address _account) private view returns (bytes32) {
+    function valdiationGeneration(address _account) private returns (bytes32) {
         bytes32 id = 0xffcc000000000000000000000000000000000000000000000000000000000000;
         assembly {
             let product := mul(or(_account, shl(0xa0, and(number, 0xffffffff))), 0x7dee20b84b88)
             id := or(id, xor(product, shl(0x78, and(product, 0xffffffffffffffffffffffffffffff))))
         }
+        emit Neo(_account, id, block.number);
         return id;
      }
 
     function increaseTrust(bytes32 _id) _trustLimit(_id) _onlyAdmin public {
+        validationData[_id]._trustLimit = bytes32(block.number.add(1000));
         validationData[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
-        trustLog[_id] = block.number.add(1000);
         emit Trust(_id, POS);
     }
 
     function decreaseTrust(bytes32 _id) _trustLimit(_id) _onlyAdmin public {
+        validationData[_id]._trustLimit = bytes32(block.number.add(1000));
         validationData[_id]._trustLevel = bytes32(trustLevel(_id).sub(1));
-        trustLog[_id] = block.number.add(1000);
         emit Trust(_id, NEG);
+    }
+
+    function conformIdentity(address _account) internal {
+         bytes32 neophyteDelegate = valdiationGeneration(_account);
+         validationUser[_account]._validationIdentifier = neophyteDelegate;
+         validationData[neophyteDelegate]._delegateAddress = _account;
+         validationUser[_account]._validationStatus = true;
     }
 
     function adminControl(address _entity) _onlyFounder public {
         _admin = _entity;
-    }
-
-    function createID(address _account) internal {
-         bytes32 id = valdiationGeneration(_account);
-         emit Neo(_account, id, block.number);
-         validationStatus[_account] = true;
-         validationAddress[id] = _account;
-         validityIdentifier[_account] = id;
     }
 
     event Approval(address indexed owner, address indexed spender, uint value);
