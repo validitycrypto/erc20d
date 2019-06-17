@@ -211,7 +211,7 @@ contract("ERC20d", async accounts => {
          );
       })
    );
-  it("Transactional ::: !isStaking()", () =>
+  it("Transactional ::: isStaking() ::: PRE", () =>
        ERC20d.deployed()
          .then(async _instance => {
             var oneVote = web3.utils.toBN(10000).mul(web3.utils.toBN(1e18));
@@ -232,7 +232,7 @@ contract("ERC20d", async accounts => {
             );
          })
    );
-   it("Transactional ::: isStaking()", () =>
+   it("Transactional ::: isStaking() ::: POST", () =>
         ERC20d.deployed()
           .then(async _instance => {
              var preBalance = await _instance.balanceOf.call(accounts[0]);
@@ -462,6 +462,48 @@ contract("ERC20d", async accounts => {
               );
 
          })
+  );
+  it("Delegation ::: isActive() ::: PRE", () =>
+       ERC20d.deployed()
+         .then(async _instance => {
+            var validationStatus = await _instance.isActive.call(accounts[4]);
+            var subjectId = await _instance.validityId.call(accounts[4]);
+            var accountBalance = await _instance.balanceOf(accounts[4]);
+
+            assert.equal(accountBalance, 0,
+              "Subject account already has a balance"
+            );
+
+            assert.equal(subjectId, zeroId,
+              "Failure regarding ValidityID generation"
+            );
+
+            assert.equal(validationStatus, false,
+              "Failure logging validation activity"
+            );
+       })
+  );
+  it("Delegation ::: isActive() ::: POST", () =>
+       ERC20d.deployed()
+         .then(async _instance => {
+           await _instance.transfer(accounts[4], convertHex(oneVote), { from: accounts[0] });
+
+           var validationStatus = await _instance.isActive.call(accounts[4]);
+           var subjectId = await _instance.validityId.call(accounts[4]);
+           var accountBalance = await _instance.balanceOf(accounts[4]);
+
+           assert.ok(accountBalance > 0,
+             "Subject account already has a balance"
+           );
+
+           assert.ok(subjectId !== zeroId,
+             "Failure regarding ValidityID generation"
+           );
+
+           assert.equal(validationStatus, true,
+             "Failure logging validation activity"
+           );
+       })
   );
     it("Delegation ::: isVoted() ::: PRE", () =>
          ERC20d.deployed()
