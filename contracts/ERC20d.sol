@@ -31,6 +31,7 @@ contract ERC20d {
 
     mapping (address => mapping (address => uint)) private _allowed;
     mapping (address => uint) private _balances;
+    mapping (uint => uint) private _volume;
 
     mapping (bytes32 => delegateObject) private validationData;
     mapping (address => userObject) private validationUser;
@@ -38,6 +39,7 @@ contract ERC20d {
     address private _founder = msg.sender;
     address private _admin = address(0x0);
 
+    uint private _volumeIndex;
     uint private _totalSupply;
     uint private _maxSupply;
     uint private _decimals;
@@ -76,6 +78,7 @@ contract ERC20d {
         //  2,530,000,000 VLDY - Delegation supply
         uint genesis = uint(48070000000).mul(10**uint(18));
         _maxSupply = uint(50600000000).mul(10**uint(18));
+        _volumeIndex = now.add(604800);
         _mint(_founder, genesis);
         _name = "Validity";
         _symbol = "VLDY";
@@ -107,6 +110,10 @@ contract ERC20d {
 
     function decimals() public view returns (uint) {
         return _decimals;
+    }
+
+    function volume() public view returns (uint) {
+        return _volume[_volumeIndex];
     }
 
     function maxSupply() public view returns (uint) {
@@ -208,6 +215,7 @@ contract ERC20d {
         _balances[_from] = _balances[_from].sub(_value);
         _balances[_to] = _balances[_to].add(_value);
         emit Transfer(_from, _to, _value);
+        _velocity(_value);
     }
 
     function _approve(address _owner, address _spender, uint _value) internal {
@@ -218,6 +226,16 @@ contract ERC20d {
         emit Approval(_owner, _spender, _value);
     }
 
+    function _velocity(uint _value) internal {
+        if(now < _volumeIndex){
+          _volume[_volumeIndex] = _volume[_volumeIndex].add(_value);
+        } else {
+          uint newRange = now.add(604800);
+          _volume[newRange] = _value;
+          _volumeIndex = newRange;
+        }
+    }
+
     function _mint(address _account, uint _value) _verifyId(_account) private {
         require(_totalSupply.add(_value) <= _maxSupply);
         require(_account != address(0x0));
@@ -225,6 +243,7 @@ contract ERC20d {
         _totalSupply = _totalSupply.add(_value);
         _balances[_account] = _balances[_account].add(_value);
         emit Transfer(address(0x0), _account, _value);
+        _velocity(_value);
     }
 
     function delegationReward(bytes32 _id, address _account, uint _reward) _onlyAdmin public {
@@ -256,7 +275,7 @@ contract ERC20d {
         emit Vote(_id, _subject, _choice, _weight);
     }
 
-    function valdiationGeneration(address _account) private returns (bytes32) {
+    function valdiationGeneration(address _account) internal view returns (bytes32) {
         bytes32 id = 0xffcc000000000000000000000000000000000000000000000000000000000000;
         assembly {
             let product := mul(or(_account, shl(0xa0, and(number, 0xffffffff))), 0x7dee20b84b88)

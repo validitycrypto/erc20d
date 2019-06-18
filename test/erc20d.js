@@ -59,14 +59,26 @@ async function shortAddress(){
   return newAccount[0];
 }
 
+const mineOneBlock = async() => (
+  await web3.currentProvider.send({
+    jsonrpc: '2.0',
+    method: 'evm_mine',
+    params: 0
+  }, () => {})
+);
+
 async function timeTravel(){
   for(var x = 0 ; x < 1000 ; x++){
+    await mineOneBlock();
+  }
+}
+
+async function timeMorph(){
     await web3.currentProvider.send({
       jsonrpc: '2.0',
-      method: 'evm_mine',
-      params: 0
+      method: 'evm_increaseTime',
+      params: 604860
     }, () => {});
-  }
 }
 
 contract("ERC20d", async accounts => {
@@ -125,6 +137,34 @@ contract("ERC20d", async accounts => {
        );
     })
   ));
+  it("Tokeneconomics ::: volume() ", () =>
+     ERC20d.deployed()
+       .then(async _instance => {
+         var preVolume = await _instance.volume.call();
+
+         await _instance.transfer(accounts[6], oneVote);
+
+         var postVolume = await _instance.volume.call();
+
+         assert.equal(subtractValues(postVolume, preVolume), convertHex(oneVote),
+          "Failure computing values for volume storage"
+        );
+
+        var oldBlock = await web3.eth.getBlock("latest");
+
+        await timeMorph();
+        await mineOneBlock();
+
+        await _instance.transfer(accounts[6], oneVote);
+
+        var newVolume = await _instance.volume.call();
+
+        assert.equal(convertHex(newVolume), oneVote,
+         "Failure redirecting timestamp keys for volume mapping"
+        );
+
+       })
+  );
   it("Ownership ::: _onlyFounder()", () =>
        ERC20d.deployed()
          .then(async _instance => {
