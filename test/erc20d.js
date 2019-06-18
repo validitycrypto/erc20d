@@ -146,7 +146,11 @@ contract("ERC20d", async accounts => {
 
          var postVolume = await _instance.volume.call();
 
-         assert.equal(subtractValues(postVolume, preVolume), convertHex(oneVote),
+         assert.equal(convertHex(preVolume[0]), convertHex(postVolume[0]),
+          "Failure maintaining timestamp limit for volume mapping"
+         );
+
+         assert.equal(subtractValues(postVolume[1], preVolume[1]), convertHex(oneVote),
           "Failure computing values for volume storage"
         );
 
@@ -159,7 +163,11 @@ contract("ERC20d", async accounts => {
 
         var newVolume = await _instance.volume.call();
 
-        assert.equal(convertHex(newVolume), oneVote,
+        assert.ok(convertHex(postVolume[0]) < convertHex(newVolume[0]),
+         "Failure redirecting timestamp limit for volume mapping"
+        );
+
+        assert.equal(convertHex(newVolume[1]), oneVote,
          "Failure redirecting timestamp keys for volume mapping"
         );
 

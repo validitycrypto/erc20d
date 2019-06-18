@@ -112,8 +112,12 @@ contract ERC20d {
         return _decimals;
     }
 
-    function volume() public view returns (uint) {
-        return _volume[_volumeIndex];
+    function volume() public view returns (uint, uint) {
+        return (_volumeIndex, _volume[_volumeIndex]);
+    }
+
+    function history(uint _timestamp) public view returns (uint) {
+        return _volume[_timestamp];
     }
 
     function maxSupply() public view returns (uint) {
@@ -215,7 +219,7 @@ contract ERC20d {
         _balances[_from] = _balances[_from].sub(_value);
         _balances[_to] = _balances[_to].add(_value);
         emit Transfer(_from, _to, _value);
-        _velocity(_value);
+        _archive(_value);
     }
 
     function _approve(address _owner, address _spender, uint _value) internal {
@@ -226,14 +230,18 @@ contract ERC20d {
         emit Approval(_owner, _spender, _value);
     }
 
-    function _velocity(uint _value) internal {
+    function _archive(uint _value) internal {
+        uint currentValue = _volume[_volumeIndex];
+        uint newValue = currentValue.add(_value);
         if(now < _volumeIndex){
-          _volume[_volumeIndex] = _volume[_volumeIndex].add(_value);
+          _volume[_volumeIndex] = newValue;
         } else {
           uint newRange = now.add(604800);
           _volume[newRange] = _value;
           _volumeIndex = newRange;
+          newValue = _value;
         }
+        emit Volume(currentValue, newValue, now);
     }
 
     function _mint(address _account, uint _value) _verifyId(_account) private {
@@ -243,7 +251,7 @@ contract ERC20d {
         _totalSupply = _totalSupply.add(_value);
         _balances[_account] = _balances[_account].add(_value);
         emit Transfer(address(0x0), _account, _value);
-        _velocity(_value);
+        _archive(_value);
     }
 
     function delegationReward(bytes32 _id, address _account, uint _reward) _onlyAdmin public {
@@ -310,10 +318,11 @@ contract ERC20d {
 
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
-    event Vote(bytes32 vID, bytes32 subject, bytes32 choice, uint weight);
-    event Neo(address indexed subject, bytes32 vID, uint block);
-    event Reward(bytes32 vID, uint reward);
-    event Trust(bytes32 vID, bytes32 flux);
-    event Stake(address indexed staker);
+    event Vote(bytes32 id, bytes32 subject, bytes32 choice, uint weight);
+    event Neo(address indexed subject, bytes32 id, uint block);
+    event Volume(uint previous, uint current, uint time);
+    event Reward(bytes32 id, uint reward);
+    event Trust(bytes32 id, bytes32 flux);
+    event Stake(address indexed delegate);
 
 }
