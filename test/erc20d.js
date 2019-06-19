@@ -11,10 +11,14 @@ const oneVote = web3.utils.toBN(10000).mul(web3.utils.toBN(1e18));
 const genesisValue = 48070000000000000000000000000;
 const maxValue = 50600000000000000000000000000;
 
-function subtractValues(_a, _b) {
-  var valueDelta = web3.utils.toBN(convertHex(_a)).sub(web3.utils.toBN(convertHex(_b)));
-  return web3.utils.hexToNumberString(valueDelta);
-}
+
+const mineOneBlock = async() => (
+  await web3.currentProvider.send({
+    jsonrpc: '2.0',
+    method: 'evm_mine',
+    params: 0
+  }, () => {})
+);
 
 function convertHex(_input) {
   return web3.utils.hexToNumberString(_input);
@@ -34,6 +38,11 @@ function trimAddress(_address){
 
 function checkZero(_address){
   return JSON.stringify(_address).substring(41, 43);
+}
+
+function subtractValues(_a, _b) {
+  var valueDelta = web3.utils.toBN(convertHex(_a)).sub(web3.utils.toBN(convertHex(_b)));
+  return web3.utils.hexToNumberString(valueDelta);
 }
 
 async function createRawTX(_accountObject, _target, _abi){
@@ -58,14 +67,6 @@ async function shortAddress(){
   }
   return newAccount[0];
 }
-
-const mineOneBlock = async() => (
-  await web3.currentProvider.send({
-    jsonrpc: '2.0',
-    method: 'evm_mine',
-    params: 0
-  }, () => {})
-);
 
 async function timeTravel(){
   for(var x = 0 ; x < 1000 ; x++){
@@ -154,8 +155,6 @@ contract("ERC20d", async accounts => {
           "Failure computing values for volume storage"
         );
 
-        var oldBlock = await web3.eth.getBlock("latest");
-
         await timeMorph();
         await mineOneBlock();
 
@@ -170,6 +169,24 @@ contract("ERC20d", async accounts => {
         assert.equal(convertHex(newVolume[1]), oneVote,
          "Failure redirecting timestamp keys for volume mapping"
         );
+
+       })
+  );
+  it("Tokeneconomics ::: history() ", () =>
+     ERC20d.deployed()
+       .then(async _instance => {
+         var oldBlock = await web3.eth.getBlock("latest");
+         var volumeMetadata = await _instance.volume();
+         var currentVolume = await _instance.history(volumeMetadata[0]);
+         var zeroVolume = await _instance.history(oldBlock.timestamp);
+
+         assert.equal(zeroVolume, 0,
+           "Stock value for keymapping is greater than zero"
+         );
+
+         assert.ok(0 < currentVolume,
+           "Volume failure, no transactional value logged"
+         );
 
        })
   );
