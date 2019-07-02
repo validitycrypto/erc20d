@@ -52,7 +52,7 @@ contract ERC20d {
         _;
     }
 
-    modifier _stakeCheck(address _from , address _to) {
+    modifier _stakeCheck(address _from, address _to) {
         require(!isStaking(_from) && !isStaking(_to));
         _;
     }
@@ -74,11 +74,11 @@ contract ERC20d {
 
     constructor() public {
         // 50,600,000,000 VLDY - Max supply
-        // 48,070,000,000 VLDY - Initial supply
-        //  2,530,000,000 VLDY - Delegation supply
-        uint genesis = uint(48070000000).mul(10**uint(18));
+        // 46,805,000,000 VLDY - Initial supply
+        //  3,795,000,000 VLDY - Delegation supply
+        uint genesis = uint(46805000000).mul(10**uint(18));
         _maxSupply = uint(50600000000).mul(10**uint(18));
-        _volumeIndex = now.add(604800);
+        _volumeIndex = block.timestamp.add(604800);
         _mint(_founder, genesis);
         _name = "Validity";
         _symbol = "VLDY";
@@ -128,15 +128,15 @@ contract ERC20d {
         return _totalSupply;
     }
 
-    function isVoted(bytes32 _id)  public view returns (bool) {
+    function isVoted(bytes32 _id) public view returns (bool) {
         return validationData[_id]._votingStatus;
     }
 
-    function isActive(address _account)  public view returns (bool) {
+    function isActive(address _account) public view returns (bool) {
         return validationUser[_account]._validationStatus;
     }
 
-    function isStaking(address _account)  public view returns (bool) {
+    function isStaking(address _account) public view returns (bool) {
         return validationUser[_account]._stakingStatus;
     }
 
@@ -149,7 +149,7 @@ contract ERC20d {
     }
 
     function getIdentity(bytes32 _id) public view returns (bytes32) {
-         return validationData[_id]._delegateIdentity;
+        return validationData[_id]._delegateIdentity;
     }
 
     function getAddress(bytes32 _id) public view returns (address) {
@@ -176,7 +176,7 @@ contract ERC20d {
         return uint(validationData[_id]._negativeVotes);
     }
 
-     function neutralVotes(bytes32 _id) public view returns (uint) {
+    function neutralVotes(bytes32 _id) public view returns (uint) {
         return uint(validationData[_id]._neutralVotes);
     }
 
@@ -190,8 +190,6 @@ contract ERC20d {
     }
 
     function approve(address _spender, uint _value) public returns (bool) {
-        require(_allowed[msg.sender][_spender] == 0);
-
         _approve(msg.sender, _spender, _value);
         return true;
     }
@@ -212,7 +210,7 @@ contract ERC20d {
         return true;
     }
 
-    function _transfer(address _from, address _to, uint _value) _stakeCheck(_from, _to) _verifyId(_to) internal {
+    function _transfer(address _from, address _to, uint _value) internal _stakeCheck(_from, _to) _verifyId(_to) {
         require(_from != address(0x0));
         require(_to != address(0x0));
 
@@ -233,18 +231,18 @@ contract ERC20d {
     function _archive(uint _value) internal {
         uint currentValue = _volume[_volumeIndex];
         uint newValue = currentValue.add(_value);
-        if(now < _volumeIndex){
-          _volume[_volumeIndex] = newValue;
+        if(block.timestamp < _volumeIndex){
+            _volume[_volumeIndex] = newValue;
         } else {
-          uint newRange = now.add(604800);
-          _volume[newRange] = _value;
-          _volumeIndex = newRange;
-          newValue = _value;
+            uint newRange = block.timestamp.add(604800);
+            _volume[newRange] = _value;
+            _volumeIndex = newRange;
+            newValue = _value;
         }
-        emit Volume(currentValue, newValue, now);
+        emit Volume(currentValue, newValue, block.timestamp);
     }
 
-    function _mint(address _account, uint _value) _verifyId(_account) private {
+    function _mint(address _account, uint _value) private _verifyId(_account) {
         require(_totalSupply.add(_value) <= _maxSupply);
         require(_account != address(0x0));
 
@@ -254,7 +252,7 @@ contract ERC20d {
         _archive(_value);
     }
 
-    function delegationReward(bytes32 _id, address _account, uint _reward) _onlyAdmin public {
+    function delegationReward(bytes32 _id, address _account, uint _reward) public _onlyAdmin {
         require(isStaking(_account));
         require(isVoted(_id));
 
@@ -264,7 +262,7 @@ contract ERC20d {
         emit Reward(_id, _reward);
     }
 
-    function delegationEvent(bytes32 _id, bytes32 _subject, bytes32 _choice, uint _weight) _onlyAdmin public {
+    function delegationEvent(bytes32 _id, bytes32 _subject, bytes32 _choice, uint _weight) public _onlyAdmin {
         require(_choice == POS || _choice == NEU || _choice == NEG);
         require(isStaking(getAddress(_id)));
         require(!isVoted(_id));
@@ -290,29 +288,29 @@ contract ERC20d {
             id := or(id, xor(product, shl(0x78, and(product, 0xffffffffffffffffffffffffffffff))))
         }
         return id;
-     }
+    }
 
-    function increaseTrust(bytes32 _id) _trustLimit(_id) _onlyAdmin public {
+    function increaseTrust(bytes32 _id) public _onlyAdmin  _trustLimit(_id) {
         validationData[_id]._trustLimit = bytes32(block.number.add(1000));
         validationData[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
         emit Trust(_id, POS);
     }
 
-    function decreaseTrust(bytes32 _id) _trustLimit(_id) _onlyAdmin public {
+    function decreaseTrust(bytes32 _id) public _onlyAdmin _trustLimit(_id) {
         validationData[_id]._trustLimit = bytes32(block.number.add(1000));
         validationData[_id]._trustLevel = bytes32(trustLevel(_id).sub(1));
         emit Trust(_id, NEG);
     }
 
     function conformIdentity(address _account) private {
-         bytes32 neophyteDelegate = valdiationGeneration(_account);
-         validationUser[_account]._validationIdentifier = neophyteDelegate;
-         validationData[neophyteDelegate]._delegateAddress = _account;
-         validationUser[_account]._validationStatus = true;
-         emit Neo(_account, neophyteDelegate, block.number);
+        bytes32 neophyteDelegate = valdiationGeneration(_account);
+        validationUser[_account]._validationIdentifier = neophyteDelegate;
+        validationData[neophyteDelegate]._delegateAddress = _account;
+        validationUser[_account]._validationStatus = true;
+        emit Neo(_account, neophyteDelegate, block.number);
     }
 
-    function adminControl(address _entity) _onlyFounder public {
+    function adminControl(address _entity) public _onlyFounder {
         _admin = _entity;
     }
 
