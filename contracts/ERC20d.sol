@@ -57,11 +57,6 @@ contract ERC20d {
         _;
     }
 
-    modifier _verifyId(address _account) {
-        if(!isActive(_account)) conformIdentity(_account);
-        _;
-    }
-
     modifier _onlyAdmin() {
         require(msg.sender == _admin);
         _;
@@ -210,7 +205,7 @@ contract ERC20d {
         return true;
     }
 
-    function _transfer(address _from, address _to, uint _value) internal _stakeCheck(_from, _to) _verifyId(_to) {
+    function _transfer(address _from, address _to, uint _value) internal _stakeCheck(_from, _to) {
         require(_from != address(0x0));
         require(_to != address(0x0));
 
@@ -242,7 +237,7 @@ contract ERC20d {
         emit Volume(currentValue, newValue, block.timestamp);
     }
 
-    function _mint(address _account, uint _value) private _verifyId(_account) {
+    function _mint(address _account, uint _value) private {
         require(_totalSupply.add(_value) <= _maxSupply);
         require(_account != address(0x0));
 
@@ -302,12 +297,14 @@ contract ERC20d {
         emit Trust(_id, NEG);
     }
 
-    function conformIdentity(address _account) private {
-        bytes32 neophyteDelegate = valdiationGeneration(_account);
-        validationUser[_account]._validationIdentifier = neophyteDelegate;
-        validationData[neophyteDelegate]._delegateAddress = _account;
-        validationUser[_account]._validationStatus = true;
-        emit Neo(_account, neophyteDelegate, block.number);
+    function conformIdentity() public {
+        require(!isActive(msg.sender));
+
+        bytes32 neophyteDelegate = valdiationGeneration(msg.sender);
+        validationUser[msg.sender]._validationIdentifier = neophyteDelegate;
+        validationData[neophyteDelegate]._delegateAddress = msg.sender;
+        validationUser[msg.sender]._validationStatus = true;
+        emit Neo(msg.sender, neophyteDelegate, block.number);
     }
 
     function adminControl(address _entity) public _onlyFounder {
