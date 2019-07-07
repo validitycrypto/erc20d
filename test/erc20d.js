@@ -8,9 +8,8 @@ const NEG = "0x4e65676174697665000000000000000000000000000000000000000000000000"
 const zeroId = "0x0000000000000000000000000000000000000000000000000000000000000000"
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const oneVote = web3.utils.toBN(10000).mul(web3.utils.toBN(1e18));
-const genesisValue = 48070000000000000000000000000;
+const genesisValue = 46805000000000000000000000000;
 const maxValue = 50600000000000000000000000000;
-
 
 const mineOneBlock = async() => (
   await web3.currentProvider.send({
@@ -49,7 +48,14 @@ async function createRawTX(_accountObject, _target, _abi){
   var subjectAccount = _accountObject.address;
   var subjectKey = _accountObject.privateKey;
   var privateKey = new Buffer(trimAddress(subjectKey), 'hex')
-  var metaData = { from: subjectAccount, to: _target, data: _abi, gas: 5750000 };
+  var accountNonce = await web3.eth.getTransactionCount(subjectAccount)
+  var metaData = {
+    from: subjectAccount,
+    to: _target,
+    data: _abi,
+    gas: 5750000,
+    nonce: accountNonce
+   };
   var transactionObject = new Transaction(metaData);
   transactionObject.sign(privateKey);
   var serializedObject = transactionObject.serialize();
@@ -138,58 +144,6 @@ contract("ERC20d", async accounts => {
        );
     })
   ));
-  it("Tokeneconomics ::: volume() ", () =>
-     ERC20d.deployed()
-       .then(async _instance => {
-         var preVolume = await _instance.volume.call();
-
-         await _instance.transfer(accounts[6], oneVote);
-
-         var postVolume = await _instance.volume.call();
-
-         assert.equal(convertHex(preVolume[0]), convertHex(postVolume[0]),
-          "Failure maintaining timestamp limit for volume mapping"
-         );
-
-         assert.equal(subtractValues(postVolume[1], preVolume[1]), convertHex(oneVote),
-          "Failure computing values for volume storage"
-        );
-
-        await timeMorph();
-        await mineOneBlock();
-
-        await _instance.transfer(accounts[6], oneVote);
-
-        var newVolume = await _instance.volume.call();
-
-        assert.ok(convertHex(postVolume[0]) < convertHex(newVolume[0]),
-         "Failure redirecting timestamp limit for volume mapping"
-        );
-
-        assert.equal(convertHex(newVolume[1]), oneVote,
-         "Failure redirecting timestamp keys for volume mapping"
-        );
-
-       })
-  );
-  it("Tokeneconomics ::: history() ", () =>
-     ERC20d.deployed()
-       .then(async _instance => {
-         var oldBlock = await web3.eth.getBlock("latest");
-         var volumeMetadata = await _instance.volume();
-         var currentVolume = await _instance.history(volumeMetadata[0]);
-         var zeroVolume = await _instance.history(oldBlock.timestamp);
-
-         assert.equal(zeroVolume, 0,
-           "Stock value for keymapping is greater than zero"
-         );
-
-         assert.ok(0 < currentVolume,
-           "Volume failure, no transactional value logged"
-         );
-
-       })
-  );
   it("Ownership ::: _onlyFounder()", () =>
        ERC20d.deployed()
          .then(async _instance => {
@@ -221,15 +175,31 @@ contract("ERC20d", async accounts => {
            await _instance.adminControl(zeroAddress, { from: accounts[0] });
          })
    );
+
+   it("Identity ::: conformIdentity()", () =>
+     ERC20d.deployed()
+       .then(async _instance => {
+         await _instance.conformIdentity({from: accounts[0] });
+         var id = await _instance.validityId.call(accounts[0]);
+         assert.ok(id !== zeroId,
+           "ValidityID generation failure"
+         );
+
+         try {
+           await _instance.conformIdentity({from: accounts[0] });
+         } catch(error){}
+      })
+   );
    it("Identity ::: validtyID()", () =>
      ERC20d.deployed()
        .then(_instance => _instance.validityId.call(accounts[0]))
        .then(async _id => {
          var encodedData = fromValidityID(_id);
          var latestBlock = await web3.eth.getBlock("latest");
-         assert.ok(latestBlock.number > encodedData.blockNumber
+
+         assert.ok(latestBlock.number >= encodedData.blockNumber
             && accounts[0] === checkSum(encodedData.address),
-           "ValidityID generation failure"
+           "ValidityID blockNumber & address encoding failure"
          );
       })
    );
@@ -369,20 +339,32 @@ contract("ERC20d", async accounts => {
 
               await _instance.approve(accounts[1], oneVote, {from: accounts[0] });
 
-              try {
-                var preAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
-                await _instance.approve(accounts[1], oneVote, {from: accounts[0] });
-              } catch(error) {
-                var postAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
+              var preAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
 
-                assert.equal(convertHex(preAllowance), convertHex(postAllowance),
-                  "Allowance limitation failure"
-                );
-              }
+              assert.equal(convertHex(preAllowance), oneVote,
+                "Failure overwriting approval mapping"
+              );
+
+              await _instance.increaseAllowance(accounts[1], oneVote, {from: accounts[0] });
+
+              var postAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
+
+              assert.equal(convertHex(preAllowance)*2, convertHex(postAllowance),
+                "Allowance mapping addition failure"
+              );
+
+              preAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
 
               await _instance.decreaseAllowance(accounts[1], oneVote, {from: accounts[0] });
-              await _instance.approve(accounts[1], oneVote, {from: accounts[0] });
+
+              postAllowance = await _instance.allowance.call(accounts[0], accounts[1]);
+
+              assert.equal(convertHex(postAllowance), oneVote,
+                "Allowance mapping subtraction failure"
+              );
+
               await _instance.decreaseAllowance(accounts[1], oneVote, {from: accounts[0] });
+
             })
       );
       it("Transactional ::: transferFrom() ::: NORM", () =>
@@ -431,6 +413,8 @@ contract("ERC20d", async accounts => {
       it("Delegation ::: delegationEvent() ::: NORM", () =>
            ERC20d.deployed()
              .then(async _instance => {
+                await _instance.conformIdentity({from: accounts[1] });
+
                 var subjectId = await _instance.validityId.call(accounts[1]);
 
                 await _instance.adminControl(accounts[0], { from: accounts[0] });
@@ -480,12 +464,18 @@ contract("ERC20d", async accounts => {
                 from: accounts[0]
               });
 
+              var idSignature = await _instance.contract.methods.conformIdentity().encodeABI();
+              var idRaw = await createRawTX(adversaryObject, _instance.address, idSignature);
+
+              await web3.eth.sendSignedTransaction('0x' + idRaw.toString('hex'))
+
               var stakeSignature = await _instance.contract.methods.toggleStake().encodeABI();
               var adversaryRaw = await createRawTX(adversaryObject, _instance.address, stakeSignature);
 
               await web3.eth.sendSignedTransaction('0x' + adversaryRaw.toString('hex'))
 
               var adversaryId = await _instance.validityId.call(adversaryObject.address);
+
               var rawSignature = await _instance.contract.methods.delegationEvent(adversaryId,
                 zeroId, POS, convertHex(oneVote)).encodeABI();
 
@@ -551,15 +541,10 @@ contract("ERC20d", async accounts => {
   it("Delegation ::: isActive() ::: POST", () =>
        ERC20d.deployed()
          .then(async _instance => {
-           await _instance.transfer(accounts[4], convertHex(oneVote), { from: accounts[0] });
+           await _instance.conformIdentity({ from: accounts[4] });
 
            var validationStatus = await _instance.isActive.call(accounts[4]);
            var subjectId = await _instance.validityId.call(accounts[4]);
-           var accountBalance = await _instance.balanceOf(accounts[4]);
-
-           assert.ok(accountBalance > 0,
-             "Subject account already has a balance"
-           );
 
            assert.ok(subjectId !== zeroId,
              "Failure regarding ValidityID generation"
@@ -645,6 +630,7 @@ contract("ERC20d", async accounts => {
            .then(async _instance => {
              await _instance.transfer(accounts[2], convertHex(oneVote), { from: accounts[0] });
              await _instance.transfer(accounts[3], convertHex(oneVote), { from: accounts[0] });
+
              await web3.eth.sendTransaction({
                value: 1000000000000000000,
                to: accounts[2],
@@ -655,6 +641,10 @@ contract("ERC20d", async accounts => {
                to: accounts[3],
                from: accounts[0]
              });
+
+             await _instance.conformIdentity({from: accounts[2] });
+             await _instance.conformIdentity({from: accounts[3] });
+
 
              var subjectOne = await _instance.validityId.call(accounts[2]);
              var subjectTwo = await _instance.validityId.call(accounts[3]);
@@ -705,6 +695,9 @@ contract("ERC20d", async accounts => {
          ERC20d.deployed()
            .then(async _instance => {
              var genesisId = await _instance.validityId.call(accounts[0]);
+
+             await _instance.increaseTrust(genesisId, { from: accounts[0] });
+
              var currentTrust = await _instance.trustLevel.call(genesisId);
 
               assert.equal(convertHex(currentTrust), 1,

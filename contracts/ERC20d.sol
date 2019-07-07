@@ -31,7 +31,6 @@ contract ERC20d {
 
     mapping (address => mapping (address => uint)) private _allowed;
     mapping (address => uint) private _balances;
-    mapping (uint => uint) private _volume;
 
     mapping (bytes32 => delegateObject) private validationData;
     mapping (address => userObject) private validationUser;
@@ -39,7 +38,6 @@ contract ERC20d {
     address private _founder = msg.sender;
     address private _admin = address(0x0);
 
-    uint private _volumeIndex;
     uint private _totalSupply;
     uint private _maxSupply;
     uint private _decimals;
@@ -73,7 +71,6 @@ contract ERC20d {
         //  3,795,000,000 VLDY - Delegation supply
         uint genesis = uint(46805000000).mul(10**uint(18));
         _maxSupply = uint(50600000000).mul(10**uint(18));
-        _volumeIndex = block.timestamp.add(604800);
         _mint(_founder, genesis);
         _name = "Validity";
         _symbol = "VLDY";
@@ -105,14 +102,6 @@ contract ERC20d {
 
     function decimals() public view returns (uint) {
         return _decimals;
-    }
-
-    function volume() public view returns (uint, uint) {
-        return (_volumeIndex, _volume[_volumeIndex]);
-    }
-
-    function history(uint _timestamp) public view returns (uint) {
-        return _volume[_timestamp];
     }
 
     function maxSupply() public view returns (uint) {
@@ -212,7 +201,6 @@ contract ERC20d {
         _balances[_from] = _balances[_from].sub(_value);
         _balances[_to] = _balances[_to].add(_value);
         emit Transfer(_from, _to, _value);
-        _archive(_value);
     }
 
     function _approve(address _owner, address _spender, uint _value) internal {
@@ -223,20 +211,6 @@ contract ERC20d {
         emit Approval(_owner, _spender, _value);
     }
 
-    function _archive(uint _value) internal {
-        uint currentValue = _volume[_volumeIndex];
-        uint newValue = currentValue.add(_value);
-        if(block.timestamp < _volumeIndex){
-            _volume[_volumeIndex] = newValue;
-        } else {
-            uint newRange = block.timestamp.add(604800);
-            _volume[newRange] = _value;
-            _volumeIndex = newRange;
-            newValue = _value;
-        }
-        emit Volume(currentValue, newValue, block.timestamp);
-    }
-
     function _mint(address _account, uint _value) private {
         require(_totalSupply.add(_value) <= _maxSupply);
         require(_account != address(0x0));
@@ -244,7 +218,6 @@ contract ERC20d {
         _totalSupply = _totalSupply.add(_value);
         _balances[_account] = _balances[_account].add(_value);
         emit Transfer(address(0x0), _account, _value);
-        _archive(_value);
     }
 
     function delegationReward(bytes32 _id, address _account, uint _reward) public _onlyAdmin {
@@ -315,7 +288,6 @@ contract ERC20d {
     event Transfer(address indexed from, address indexed to, uint value);
     event Vote(bytes32 id, bytes32 subject, bytes32 choice, uint weight);
     event Neo(address indexed subject, bytes32 id, uint block);
-    event Volume(uint previous, uint current, uint time);
     event Reward(bytes32 id, uint reward);
     event Trust(bytes32 id, bytes32 flux);
     event Stake(address indexed delegate);
