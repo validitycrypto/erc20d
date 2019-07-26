@@ -161,17 +161,17 @@ contract("ERC20d", async accounts => {
            var genesisId = await _instance.validityId.call(accounts[0]);
 
            try {
-             var preAttack = await _instance.trustLevel.call(genesisId);
-             await _instance.increaseTrust(genesisId, { from: accounts[1] });
+             var preAttack = await _instance.viability.call(genesisId);
+             await _instance.increaseViability(genesisId, { from: accounts[1] });
            } catch(error) {
-             var postAttack = await _instance.trustLevel.call(genesisId);
+             var postAttack = await _instance.viability.call(genesisId);
              assert.equal(convertHex(preAttack), convertHex(preAttack),
                "Admin ownership failure by non-authorised user"
              );
            }
 
            await _instance.adminControl(accounts[1], { from: accounts[0] });
-           await _instance.increaseTrust(genesisId, { from: accounts[1] });
+           await _instance.increaseViability(genesisId, { from: accounts[1] });
            await _instance.adminControl(zeroAddress, { from: accounts[0] });
          })
    );
@@ -410,7 +410,7 @@ contract("ERC20d", async accounts => {
                   "Short address vulnerability");
               })
       );
-      it("Delegation ::: delegationEvent() ::: NORM", () =>
+      it("Delegation ::: validationEvent() ::: NORM", () =>
            ERC20d.deployed()
              .then(async _instance => {
                 await _instance.conformIdentity({from: accounts[1] });
@@ -419,7 +419,7 @@ contract("ERC20d", async accounts => {
 
                 await _instance.adminControl(accounts[0], { from: accounts[0] });
                 await _instance.toggleStake({ from: accounts[1] });
-                await _instance.delegationEvent(subjectId, zeroId, POS, oneVote, { from: accounts[0] });
+                await _instance.validationEvent(subjectId, zeroId, POS, oneVote, { from: accounts[0] });
 
                 var positiveVotes = await _instance.positiveVotes.call(subjectId);
 
@@ -453,7 +453,7 @@ contract("ERC20d", async accounts => {
 
            })
     );
-    it("Delegation ::: delegationEvent() ::: SHORT", () =>
+    it("Delegation ::: validationEvent() ::: SHORT", () =>
          ERC20d.deployed()
            .then(async _instance => {
               var adversaryObject = web3.eth.accounts.wallet[0];
@@ -476,7 +476,7 @@ contract("ERC20d", async accounts => {
 
               var adversaryId = await _instance.validityId.call(adversaryObject.address);
 
-              var rawSignature = await _instance.contract.methods.delegationEvent(adversaryId,
+              var rawSignature = await _instance.contract.methods.validationEvent(adversaryId,
                 zeroId, POS, convertHex(oneVote)).encodeABI();
 
               await web3.eth.sendTransaction({
@@ -567,18 +567,18 @@ contract("ERC20d", async accounts => {
               );
          })
     );
-    it("Delegation ::: delegationReward() ::: NORM ", () =>
+    it("Delegation ::: validationReward() ::: NORM ", () =>
          ERC20d.deployed()
            .then(async _instance => {
               var subjectId = await _instance.validityId.call(accounts[1]);
 
               var preBalance = await _instance.balanceOf(accounts[1]);
 
-              await _instance.delegationReward(subjectId, accounts[1], oneVote, { from: accounts[0] });
+              await _instance.validationReward(subjectId, accounts[1], oneVote, { from: accounts[0] });
 
               try {
                 var preAttack = await _instance.balanceOf(accounts[1]);
-                await _instance.delegationReward(subjectId, accounts[1], oneVote, { from: accounts[0] });
+                await _instance.validationReward(subjectId, accounts[1], oneVote, { from: accounts[0] });
               } catch(error){
                 var postAttack = await _instance.balanceOf(accounts[1]);
 
@@ -594,7 +594,7 @@ contract("ERC20d", async accounts => {
               );
          })
     );
-    it("Delegation ::: delegationReward() ::: SHORT ", () =>
+    it("Delegation ::: validationReward() ::: SHORT ", () =>
          ERC20d.deployed()
            .then(async _instance => {
 
@@ -604,12 +604,12 @@ contract("ERC20d", async accounts => {
 
               var preBalance = await _instance.balanceOf(adversaryAddress);
 
-              await _instance.delegationReward(adversaryId, adversaryAddress, oneVote, { from: accounts[0] });
+              await _instance.validationReward(adversaryId, adversaryAddress, oneVote, { from: accounts[0] });
 
               try {
                 var preAttack = await _instance.balanceOf(adversaryAddress);
 
-                await _instance.delegationReward(adversaryId, adversaryAddress, oneVote, { from: accounts[0] });
+                await _instance.validationReward(adversaryId, adversaryAddress, oneVote, { from: accounts[0] });
               } catch(error){
                 var postAttack = await _instance.balanceOf(adversaryAddress);
 
@@ -625,7 +625,7 @@ contract("ERC20d", async accounts => {
               );
          })
     );
-    it("Delegation ::: delegationReward() ::: MAX ", () =>
+    it("Delegation ::: validationReward() ::: MAX ", () =>
          ERC20d.deployed()
            .then(async _instance => {
              await _instance.transfer(accounts[2], convertHex(oneVote), { from: accounts[0] });
@@ -645,7 +645,6 @@ contract("ERC20d", async accounts => {
              await _instance.conformIdentity({from: accounts[2] });
              await _instance.conformIdentity({from: accounts[3] });
 
-
              var subjectOne = await _instance.validityId.call(accounts[2]);
              var subjectTwo = await _instance.validityId.call(accounts[3]);
 
@@ -656,10 +655,10 @@ contract("ERC20d", async accounts => {
              await _instance.toggleStake({ from: accounts[2] });
              await _instance.toggleStake({ from: accounts[3] });
 
-             await _instance.delegationEvent(subjectOne, zeroId, POS, oneVote, { from: accounts[0] });
-             await _instance.delegationEvent(subjectTwo, zeroId, POS, oneVote, { from: accounts[0] });
+             await _instance.validationEvent(subjectOne, zeroId, POS, oneVote, { from: accounts[0] });
+             await _instance.validationEvent(subjectTwo, zeroId, POS, oneVote, { from: accounts[0] });
 
-             await _instance.delegationReward(subjectOne, accounts[2], remainingSupply, { from: accounts[0] });
+             await _instance.validationReward(subjectOne, accounts[2], remainingSupply, { from: accounts[0] });
 
              currentSupply = await _instance.totalSupply.call();
 
@@ -669,7 +668,7 @@ contract("ERC20d", async accounts => {
 
             try {
               var preBalance = await _instance.balanceOf.call(accounts[3])
-              await _instance.delegationReward(subjectTwo, accounts[3], remainingSupply, { from: accounts[0] });
+              await _instance.validationReward(subjectTwo, accounts[3], remainingSupply, { from: accounts[0] });
             } catch(error) {
               var postBalance = await _instance.balanceOf.call(accounts[3])
 
@@ -691,30 +690,30 @@ contract("ERC20d", async accounts => {
               );
          })
     );
-    it("Delegation ::: trustLevel() ::: INCREASE", () =>
+    it("Delegation ::: viability() ::: INCREASE", () =>
          ERC20d.deployed()
            .then(async _instance => {
              var genesisId = await _instance.validityId.call(accounts[0]);
 
-             await _instance.increaseTrust(genesisId, { from: accounts[0] });
+             await _instance.increaseViability(genesisId, { from: accounts[0] });
 
-             var currentTrust = await _instance.trustLevel.call(genesisId);
+             var currentTrust = await _instance.viability.call(genesisId);
 
               assert.equal(convertHex(currentTrust), 1,
                   "Failure in updating trust level"
                 );
             })
     );
-    it("Delegation ::: _trustLimit()", () =>
+    it("Delegation ::: _viabilityLimit()", () =>
          ERC20d.deployed()
            .then(async _instance => {
              var genesisId = await _instance.validityId.call(accounts[0]);
-             var preAttack = await _instance.trustLevel.call(genesisId);
+             var preAttack = await _instance.viability.call(genesisId);
 
               try {
-                await _instance.increaseTrust(genesisId, { from: accounts[1] });
+                await _instance.increaseViability(genesisId, { from: accounts[1] });
               } catch(error){
-                var postAttack = await _instance.trustLevel.call(genesisId);
+                var postAttack = await _instance.viability.call(genesisId);
 
                 assert.equal(convertHex(postAttack), convertHex(preAttack),
                   "Failure in trust time constraints"
@@ -724,14 +723,14 @@ contract("ERC20d", async accounts => {
               await timeTravel();
          })
     );
-    it("Delegation ::: trustLevel() ::: DECREASE", () =>
+    it("Delegation ::: viability() ::: DECREASE", () =>
          ERC20d.deployed()
            .then(async _instance => {
              var genesisId = await _instance.validityId.call(accounts[0]);
 
-             await _instance.decreaseTrust(genesisId, { from: accounts[0] });
+             await _instance.decreaseViability(genesisId, { from: accounts[0] });
 
-             var currentTrust = await _instance.trustLevel.call(genesisId);
+             var currentTrust = await _instance.viability.call(genesisId);
 
               assert.equal(convertHex(currentTrust), 0,
                   "Failure in decreasing trust level"

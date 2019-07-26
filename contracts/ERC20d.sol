@@ -4,6 +4,10 @@ import "./SafeMath.sol";
 
 contract ERC20d {
 
+    // Author ::: Samuel JJ Gosling
+    // Usage ::: Governance
+    // Entity ::: Validity
+
     using SafeMath for uint;
 
     bytes32 constant POS = 0x506f736974697665000000000000000000000000000000000000000000000000;
@@ -19,13 +23,13 @@ contract ERC20d {
     struct delegateObject {
         address _delegateAddress;
         bytes32 _delegateIdentity;
+        bytes32 _viabilityLimit;
+        bytes32 _viabilityRank;
         bytes32 _positiveVotes;
         bytes32 _negativeVotes;
         bytes32 _neutralVotes;
         bytes32 _totalEvents;
         bytes32 _totalVotes;
-        bytes32 _trustLimit;
-        bytes32 _trustLevel;
         bool _votingStatus;
     }
 
@@ -45,8 +49,8 @@ contract ERC20d {
     string private _name;
     string private _symbol;
 
-    modifier _trustLimit(bytes32 _id) {
-        require(uint(validationData[_id]._trustLimit) <= block.number);
+    modifier _viabilityLimit(bytes32 _id) {
+        require(uint(validationData[_id]._viabilityLimit) <= block.number);
         _;
     }
 
@@ -66,9 +70,9 @@ contract ERC20d {
     }
 
     constructor() public {
-        // 50,600,000,000 VLDY - Max supply
-        // 46,805,000,000 VLDY - Initial supply
-        //  3,795,000,000 VLDY - Delegation supply
+        //  Max supply (100%) ::: 50,600,000,000 VLDY
+        //  Genesis supply (92.5%) ::: 46,805,000,000 VLDY
+        //  Validation supply (7.5%) ::: 3,795,000,000 VLDY
         uint genesis = uint(46805000000).mul(10**uint(18));
         _maxSupply = uint(50600000000).mul(10**uint(18));
         _mint(_founder, genesis);
@@ -140,8 +144,8 @@ contract ERC20d {
         return validationData[_id]._delegateAddress;
     }
 
-    function trustLevel(bytes32 _id) public view returns (uint) {
-        return uint(validationData[_id]._trustLevel);
+    function viability(bytes32 _id) public view returns (uint) {
+        return uint(validationData[_id]._viabilityRank);
     }
 
     function totalEvents(bytes32 _id) public view returns (uint) {
@@ -220,7 +224,7 @@ contract ERC20d {
         emit Transfer(address(0x0), _account, _value);
     }
 
-    function delegationReward(bytes32 _id, address _account, uint _reward) public _onlyAdmin {
+    function validationReward(bytes32 _id, address _account, uint _reward) public _onlyAdmin {
         require(isStaking(_account));
         require(isVoted(_id));
 
@@ -230,7 +234,7 @@ contract ERC20d {
         emit Reward(_id, _reward);
     }
 
-    function delegationEvent(bytes32 _id, bytes32 _subject, bytes32 _choice, uint _weight) public _onlyAdmin {
+    function validationEvent(bytes32 _id, bytes32 _subject, bytes32 _choice, uint _weight) public _onlyAdmin {
         require(_choice == POS || _choice == NEU || _choice == NEG);
         require(isStaking(getAddress(_id)));
         require(!isVoted(_id));
@@ -249,7 +253,7 @@ contract ERC20d {
         emit Vote(_id, _subject, _choice, _weight);
     }
 
-    function valdiationGeneration(address _account) internal view returns (bytes32) {
+    function validationGeneration(address _account) internal view returns (bytes32) {
         bytes32 id = 0xffcc000000000000000000000000000000000000000000000000000000000000;
         assembly {
             let product := mul(or(_account, shl(0xa0, and(number, 0xffffffff))), 0x7dee20b84b88)
@@ -258,22 +262,22 @@ contract ERC20d {
         return id;
     }
 
-    function increaseTrust(bytes32 _id) public _onlyAdmin  _trustLimit(_id) {
-        validationData[_id]._trustLimit = bytes32(block.number.add(1000));
-        validationData[_id]._trustLevel = bytes32(trustLevel(_id).add(1));
+    function increaseViability(bytes32 _id) public _onlyAdmin  _viabilityLimit(_id) {
+        validationData[_id]._viabilityLimit = bytes32(block.number.add(1000));
+        validationData[_id]._viabilityRank = bytes32(viability(_id).add(1));
         emit Trust(_id, POS);
     }
 
-    function decreaseTrust(bytes32 _id) public _onlyAdmin _trustLimit(_id) {
-        validationData[_id]._trustLimit = bytes32(block.number.add(1000));
-        validationData[_id]._trustLevel = bytes32(trustLevel(_id).sub(1));
+    function decreaseViability(bytes32 _id) public _onlyAdmin _viabilityLimit(_id) {
+        validationData[_id]._viabilityLimit = bytes32(block.number.add(1000));
+        validationData[_id]._viabilityRank = bytes32(viability(_id).sub(1));
         emit Trust(_id, NEG);
     }
 
     function conformIdentity() public {
         require(!isActive(msg.sender));
 
-        bytes32 neophyteDelegate = valdiationGeneration(msg.sender);
+        bytes32 neophyteDelegate = validationGeneration(msg.sender);
         validationUser[msg.sender]._validationIdentifier = neophyteDelegate;
         validationData[neophyteDelegate]._delegateAddress = msg.sender;
         validationUser[msg.sender]._validationStatus = true;
@@ -287,9 +291,9 @@ contract ERC20d {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
     event Vote(bytes32 id, bytes32 subject, bytes32 choice, uint weight);
-    event Neo(address indexed subject, bytes32 id, uint block);
+    event Neo(address indexed delegate, bytes32 id, uint block);
+    event Trust(bytes32 id, bytes32 change);
     event Reward(bytes32 id, uint reward);
-    event Trust(bytes32 id, bytes32 flux);
     event Stake(address indexed delegate);
 
 }
