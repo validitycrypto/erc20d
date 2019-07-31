@@ -4,13 +4,13 @@ Records voting informatics for negative, positive, and total participation count
 
 The VLDY token is ERC20 compliant and all transaction functions are that of a standard token but where the features extend to functions of delegation, so the token type is denoted as ERC20d.
 
-### Use-cases
+## Use-cases
 
 * Communal sentiments
 * Peer production
 * Data integrity
 
-### Stakes
+## Stakes
 
 All are encoded to base16 (Hex)
 
@@ -18,7 +18,7 @@ All are encoded to base16 (Hex)
 * Negative (NEG): `0x4e65676174697665000000000000000000000000000000000000000000000000`
 * Neutral (NEU): `0x6e65757472616c00000000000000000000000000000000000000000000000000`
 
-### ValidityID's
+## ValidityID's
 
 That is automatically generated when they receive an ERC20d balance for the first time. The id allows access to the delegates voting statistics, credibility and identity. The hexadecimal id contains a prefix for the asset, the block timestamp and the users calling account.
 
@@ -33,15 +33,15 @@ Address: 0xE40EB743300EE880736F47c266187aD63c77EF74 ->
 vID: 0x56616c69646974795c06b34be40eb743300ee880736f47c266187ad63c77ef74
 ```
 
-### Syibil Immunity
+## Syibil Immunity
 
 A private keymap structure `_stake` is introduced in order to reduce levels of abnormal activity and delegation exploitation, the user's stake/lock their own tokens by calling the `toggleStake()` function before committing to a delegation event. Users who are staking cannot receive or send tokens until the event ends.
 
-### Validation Supply
+## Validation Supply
 
 With the addition of an internal parameter of `_maxSupply` allows for the supply to be limited in an appropriate manner, still baring an essence of central control but yet yields a limit to potential misuse. The admin control features should be given full control to the verified delegation contract and not any other entity. In order to experience this digital commodity to full of its capabilities.
 
-### Validation Metadata
+## Validation Metadata
 
 Each voter has a unique delegation data structure that stores insight regarding a users identity, decision, commitment and accuracy. The following information is stored and is publically accessible to any user upon retrieval of a delegation identifier.
 
