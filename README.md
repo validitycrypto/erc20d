@@ -3,7 +3,7 @@
 
 Deployed live at [0x904da022abcf44eba68d4255914141298a7f7307](https://etherscan.io/token/0x904da022abcf44eba68d4255914141298a7f7307)
 
-The VLDY token is ERC20 compliant and all transaction functions are that of a standard token but where the features extend to functions of delegation, so the token type is denoted as ERC20d. One could call this new approach towards on-chain governance as an aspect of a **DAO**,  of which is incomplete without the symbiotic [Communal Validation](https://github.com/validitycrypto/commaunal-validation) infrastructure, which will embed all validation topics and distribute rewards to participants in events, whereas the token is the asset of user metadata and ability to represent votes.
+The VLDY token is ERC20 compliant and all transaction functions are that of a standard token but where the features extend to functions of delegation, so the token type is denoted as ERC20d. One could call this new approach towards on-chain governance as an aspect of a **DAO**, of which is incomplete without the symbiotic [Communal Validation](https://github.com/validitycrypto/commaunal-validation) infrastructure, which will embed all validation topics and distribute rewards to participants in events, whereas the token is the asset of user metadata and ability to represent votes.
 
 ## Use-cases
 
