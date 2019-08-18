@@ -1,8 +1,9 @@
-# Validity ERC20d Token Contract
+# ERC20d
+### A unique delegation token for the Validity eco-system
 
-Records voting informatics for negative, positive, and total participation count of every registered voter.
+Deployed live at [0x904da022abcf44eba68d4255914141298a7f7307](https://etherscan.io/token/0x904da022abcf44eba68d4255914141298a7f7307)
 
-The VLDY token is ERC20 compliant and all transaction functions are that of a standard token but where the features extend to functions of delegation, so the token type is denoted as ERC20d.
+The VLDY token is ERC20 compliant and all transaction functions are that of a standard token but where the features extend to functions of delegation, so the token type is denoted as ERC20d. One could call this new approach towards on-chain governance as an aspect of a ***DAO***,  of which is incomplete without the symbiotic [Communal Validation](https://github.com/validitycrypto/commaunal-validation) infrastructure, which will embed all validation topics and distribute rewards to participants in events, whereas the token is the asset of user metadata and ability to represent votes.
 
 ## Use-cases
 
@@ -12,7 +13,7 @@ The VLDY token is ERC20 compliant and all transaction functions are that of a st
 
 ## Stakes
 
-All are encoded to base16 (Hex)
+Voting options are all encoded to bytes32 from their stringed forms, whereas delegates reflect their certainties or in the case of natural stakes uncertainties regarding the validation topic.
 
 * Postitive (POS): `0x506f736974697665000000000000000000000000000000000000000000000000`
 * Negative (NEG): `0x4e65676174697665000000000000000000000000000000000000000000000000`
@@ -20,26 +21,24 @@ All are encoded to base16 (Hex)
 
 ## ValidityID's
 
-That is automatically generated when they receive an ERC20d balance for the first time. The id allows access to the delegates voting statistics, credibility and identity. The hexadecimal id contains a prefix for the asset, the block timestamp and the users calling account.
+The hexadecimal self-sovereign identity declares it's general donation with a starting prefix of 0xffcc, this is the core element of delegate representation in the Validity eco-system, one has to be wary that their ***binding address is the only form of access to representing this declaration and if lost means the ultimate inhibit to validation under that said identity***.  With periodic and accurate usage of one's identity increases one's viability within the infrastructure allowing higher validation staking power with proactive engagements.
 
+***Example of ValidityID generation***
 ```
-Address: 0x267D19a33E10B7E42596096b7C0a3856872E21e1 ->
-vID: 0x56616c69646974795c06b51c267d19a33e10b7e42596096b7c0a3856872e21e1
+{ address: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  block: 13 }
+ :::
+0xffcc96b27a27d472340c3de9627d95192a96b27a2141f752df20eff97ffda338
 
-Address: 0x39b494927F510AD5758907b959048454eC9b0976 ->
-vID: 0x56616c69646974795c06b4d139b494927f510ad5758907b959048454ec9b0976
-
-Address: 0xE40EB743300EE880736F47c266187aD63c77EF74 ->
-vID: 0x56616c69646974795c06b34be40eb743300ee880736f47c266187ad63c77ef74
 ```
 
 ## Syibil Immunity
 
-A private keymap structure `_stake` is introduced in order to reduce levels of abnormal activity and delegation exploitation, the user's stake/lock their own tokens by calling the `toggleStake()` function before committing to a delegation event. Users who are staking cannot receive or send tokens until the event ends.
+A private keymap structure `_stake` is introduced to reduce levels of abnormal activity and delegation exploitation, the user's stake/lock their tokens by calling the `toggleStake()` function before committing to a delegation event. Users who are staking cannot receive or send tokens until the event ends which is defined by `delegationReward()` being triggered for the said participant.
 
 ## Validation Supply
 
-With the addition of an internal parameter of `_maxSupply` allows for the supply to be limited in an appropriate manner, still baring an essence of central control but yet yields a limit to potential misuse. The admin control features should be given full control to the verified delegation contract and not any other entity. In order to experience this digital commodity to full of its capabilities.
+With the addition of an internal parameter of `_maxSupply` allows for the supply to be limited appropriately, still baring an essence of central control but yet yields a limit to potential misuse. The admin control features should be given full control to the verified delegation contract and not any other entity. To experience this digital commodity to full of its capabilities.
 
 ## Validation Metadata
 
@@ -64,4 +63,4 @@ Each voter has a unique delegation data structure that stores insight regarding 
 * A parameter to measure the delegates total event count
 
 ***Viability***
-* A mandatory parameter that delegates are allocated to measure their total delegation commitment and accuracy of results, which may impact their voting weight.
+* A mandatory parameter that delegates are allocated to measure their total delegation commitment and accuracy of results, which will impact their voting weight.

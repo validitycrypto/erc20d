@@ -295,5 +295,5 @@ contract ERC20d {
     event Trust(bytes32 id, bytes32 change);
     event Reward(bytes32 id, uint reward);
     event Stake(address indexed delegate);
-
+    
 }
