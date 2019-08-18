@@ -39,7 +39,7 @@ With the addition of an internal parameter of `_maxSupply` allows for the supply
 
 ## Validation Metadata
 
-Each voter has a unique delegation data structure that stores insight regarding a users identity, decision, commitment and accuracy. The following information is stored and is publically accessible to any user upon retrieval of a delegation identifier.
+Each voter has an unique delegation data structure that stores insight regarding a users identity, decision, commitment and accuracy. The following information is stored and is publically accessible to any user upon retrieval of a delegation identifier.
 
 ***Delegation Identity***
 * A parameter that to add a sense personal preference to their delegation identifier.
